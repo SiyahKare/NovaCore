@@ -1,0 +1,81 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+.venv
+venv
+env
+
+# Node
+node_modules
+npm-debug.log
+.next
+.cache
+.npm
+.eslintcache
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage
+.pytest_cache
+.coverage
+htmlcov
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Scripts (not needed in container)
+scripts
+
+# Cloudflare
+cloudflare-tunnel.yml
+.cloudflared
+
+# Bot (separate container)
+nasipquest_bot/.env
+
+# Frontend build artifacts (will be built in container)
+apps/citizen-portal/.next
+apps/citizen-portal/out
+
+# Database
+*.db
+*.sqlite
+

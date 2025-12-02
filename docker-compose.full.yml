@@ -57,7 +57,7 @@ services:
   novacore-frontend:
     build:
       context: .
-      dockerfile: Dockerfile.frontend
+      dockerfile: Dockerfile.frontend.simple
     container_name: novacore-frontend
     ports:
       - "127.0.0.1:3000:3000"  # Sadece localhost'tan erişilebilir

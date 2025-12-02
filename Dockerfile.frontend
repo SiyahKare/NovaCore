@@ -13,30 +13,30 @@ COPY apps/citizen-portal/package.json ./apps/citizen-portal/
 COPY packages/aurora-ui/package.json ./packages/aurora-ui/
 COPY packages/aurora-hooks/package.json ./packages/aurora-hooks/
 
-# Install root dependencies
-RUN npm ci
-
-# Install workspace dependencies
-WORKDIR /app/apps/citizen-portal
-RUN npm install
-
-WORKDIR /app/packages/aurora-ui
-RUN npm install
-
-WORKDIR /app/packages/aurora-hooks
-RUN npm install
+# Install dependencies with optimizations
+# --legacy-peer-deps: npm 7+ peer dependency conflicts için
+# --prefer-offline: Cache kullan
+# --no-audit: Security audit'i atla (build hızlandırır)
+# --progress=false: Progress bar'ı kapat (log azaltır)
+RUN npm ci --legacy-peer-deps --prefer-offline --no-audit --progress=false || \
+    (echo "npm ci failed, trying with cache clean..." && \
+     npm cache clean --force && \
+     npm ci --legacy-peer-deps --prefer-offline --no-audit --progress=false)
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 
-# Copy all files
+# Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
 COPY . .
 
 # Set environment variables for build
 ENV NEXT_PUBLIC_AURORA_API_URL=${NEXT_PUBLIC_AURORA_API_URL:-https://api.novacore.siyahkare.com/api/v1}
 ENV NEXT_PUBLIC_AURORA_ENV=production
+ENV NODE_ENV=production
 
 # Build Next.js app
 WORKDIR /app/apps/citizen-portal
