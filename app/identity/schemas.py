@@ -6,6 +6,23 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
+# ============ Email Auth ============
+class EmailLoginRequest(BaseModel):
+    """Email ve şifre ile giriş isteği."""
+
+    email: str = Field(..., description="Kullanıcı email adresi")
+    password: str = Field(..., min_length=6, description="Kullanıcı şifresi")
+
+
+class EmailRegisterRequest(BaseModel):
+    """Email ve şifre ile kayıt isteği."""
+
+    email: str = Field(..., description="Kullanıcı email adresi")
+    password: str = Field(..., min_length=6, description="Kullanıcı şifresi")
+    display_name: str | None = Field(None, max_length=255, description="Kullanıcı görünen adı")
+    username: str | None = Field(None, max_length=255, description="Kullanıcı adı")
+
+
 # ============ Telegram Auth ============
 class TelegramAuthPayload(BaseModel):
     """

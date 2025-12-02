@@ -3,6 +3,8 @@ NovaCore Identity Service - User & Auth Logic
 """
 from datetime import datetime
 
+import bcrypt
+from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -10,7 +12,14 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.security import create_access_token
 from app.identity.models import User
-from app.identity.schemas import AuthResponse, TelegramAuthPayload, UserResponse, UserUpdate
+from app.identity.schemas import (
+    AuthResponse,
+    EmailLoginRequest,
+    EmailRegisterRequest,
+    TelegramAuthPayload,
+    UserResponse,
+    UserUpdate,
+)
 
 logger = get_logger("identity")
 
@@ -31,6 +40,11 @@ class IdentityService:
         result = await self.session.execute(
             select(User).where(User.telegram_id == telegram_id)
         )
+        return result.scalar_one_or_none()
+
+    async def get_user_by_email(self, email: str) -> User | None:
+        """Get user by email."""
+        result = await self.session.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
     async def create_user(
@@ -155,6 +169,81 @@ class IdentityService:
             telegram_id=payload.telegram_id,
             created=created,
         )
+
+        return AuthResponse(
+            access_token=access_token,
+            token_type="bearer",
+            expires_in=settings.JWT_EXPIRE_MINUTES * 60,
+            user=UserResponse.model_validate(user),
+        )
+
+    async def register_email(self, payload: EmailRegisterRequest) -> AuthResponse:
+        """Register a new user with email and password."""
+        # Check if email already exists
+        existing_user = await self.get_user_by_email(payload.email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Bu email adresi zaten kullanılıyor",
+            )
+
+        # Hash password
+        password_hash = bcrypt.hashpw(
+            payload.password.encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
+
+        # Create user
+        user = await self.create_user(
+            email=payload.email,
+            password_hash=password_hash,
+            username=payload.username,
+            display_name=payload.display_name,
+        )
+
+        await self.session.commit()
+        await self.session.refresh(user)
+
+        # Create JWT token
+        access_token = create_access_token(user_id=user.id)
+
+        logger.info("email_register", user_id=user.id, email=payload.email)
+
+        return AuthResponse(
+            access_token=access_token,
+            token_type="bearer",
+            expires_in=settings.JWT_EXPIRE_MINUTES * 60,
+            user=UserResponse.model_validate(user),
+        )
+
+    async def login_email(self, payload: EmailLoginRequest) -> AuthResponse:
+        """Login user with email and password."""
+        # Get user by email
+        user = await self.get_user_by_email(payload.email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Email veya şifre hatalı",
+            )
+
+        # Check password
+        if not user.password_hash:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Bu hesap için şifre ayarlanmamış",
+            )
+
+        if not bcrypt.checkpw(
+            payload.password.encode("utf-8"), user.password_hash.encode("utf-8")
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Email veya şifre hatalı",
+            )
+
+        # Create JWT token
+        access_token = create_access_token(user_id=user.id)
+
+        logger.info("email_login", user_id=user.id, email=payload.email)
 
         return AuthResponse(
             access_token=access_token,
