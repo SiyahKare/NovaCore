@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Aurora Design System - Base Styles */
+
+@layer base {
+  * {
+    @apply border-slate-800;
+  }
+
+  body {
+    @apply bg-aurora-dark text-slate-100 antialiased;
+  }
+}
+
+@layer components {
+  /* Aurora Card */
+  .aurora-card {
+    @apply bg-slate-900/50 border border-slate-800 rounded-lg p-6 backdrop-blur-sm;
+  }
+
+  /* Aurora Button */
+  .aurora-button {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+    @apply bg-aurora-purple hover:bg-aurora-purple-dark text-white;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .aurora-button-secondary {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+    @apply bg-slate-800 hover:bg-slate-700 text-slate-100;
+  }
+
+  /* Aurora Input */
+  .aurora-input {
+    @apply w-full px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg;
+    @apply text-slate-100 placeholder-slate-500;
+    @apply focus:outline-none focus:ring-2 focus:ring-aurora-purple focus:border-transparent;
+  }
+
+  /* Aurora Badge */
+  .aurora-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  /* Glow Effect */
+  .aurora-glow {
+    @apply shadow-lg;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3), 0 0 20px rgba(139, 92, 246, 0.1);
+  }
+}
+
+/* Aurora color utilities are defined in tailwind.config.ts */
+/* Use directly: text-aurora-purple, bg-aurora-purple, etc. */
+
+.bg-aurora-gradient {
+  background: linear-gradient(135deg, #8b5cf6 0%, #0ea5e9 100%);
+}
+

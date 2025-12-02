@@ -1,0 +1,2 @@
+# NovaCore - Kernel
+

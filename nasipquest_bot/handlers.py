@@ -1,0 +1,449 @@
+"""
+NasipQuest Bot Handlers
+Telegram bot komutları ve mesaj handler'ları
+"""
+from aiogram import Router, F
+from aiogram.filters import Command, CommandStart
+from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
+from aiogram.utils.markdown import bold, code
+
+from .api_client import api_client
+from .config import config
+
+router = Router()
+
+
+# --- Helper Functions ---
+
+def format_profile(profile: dict) -> str:
+    """Profil bilgisini formatla."""
+    text = f"👤 {bold('Profil')}\n\n"
+    text += f"💰 Bakiye: {code(profile.get('wallet_balance', '0'))} NCR\n"
+    text += f"⭐ XP: {code(str(profile.get('xp_total', 0)))} ({profile.get('tier', 'Bronze')})\n"
+    text += f"📊 Seviye: {code(str(profile.get('level', 1)))}\n"
+    
+    if profile.get('xp_to_next_level', 0) > 0:
+        text += f"⬆️ Sonraki seviye: {code(str(profile.get('xp_to_next_level', 0)))} XP kaldı\n"
+    
+    if profile.get('nova_score'):
+        text += f"\n🎯 NovaScore: {code(str(profile.get('nova_score', 0)))}\n"
+    
+    if profile.get('cp_value', 0) > 0:
+        text += f"⚖️ CP: {code(str(profile.get('cp_value', 0)))}\n"
+        text += f"🔒 Regime: {code(profile.get('regime', 'NORMAL'))}\n"
+    
+    return text
+
+
+def format_task(task: dict) -> str:
+    """Görev bilgisini formatla."""
+    text = f"📋 {bold(task.get('title', 'Görev'))}\n"
+    text += f"{task.get('description', '')}\n\n"
+    text += f"🎁 Ödül: +{task.get('reward_xp', 0)} XP, +{task.get('reward_ncr', '0')} NCR\n"
+    
+    if task.get('difficulty'):
+        text += f"⚡ Zorluk: {task.get('difficulty', 'easy')}\n"
+    
+    if task.get('cooldown_seconds', 0) > 0:
+        text += f"⏱️ Cooldown: {task.get('cooldown_seconds', 0)} saniye\n"
+    
+    return text
+
+
+def format_event(event: dict) -> str:
+    """Event bilgisini formatla."""
+    text = f"🔥 {bold(event.get('name', 'Event'))}\n\n"
+    text += f"{event.get('description', '')}\n\n"
+    
+    if event.get('reward_multiplier_xp', 1.0) > 1.0:
+        text += f"⚡ XP Multiplier: {code(str(event.get('reward_multiplier_xp', 1.0)))}\n"
+    
+    if event.get('reward_multiplier_ncr', 1.0) > 1.0:
+        text += f"💰 NCR Multiplier: {code(str(event.get('reward_multiplier_ncr', 1.0)))}\n"
+    
+    if event.get('is_joined'):
+        text += f"\n✅ Katıldın!\n"
+        if event.get('user_rank'):
+            text += f"🏆 Sıralama: {code(str(event.get('user_rank')))}.\n"
+        if event.get('user_score'):
+            score = event.get('user_score', {})
+            text += f"📊 Skor: {code(str(score.get('xp', 0)))} XP, {code(str(score.get('tasks_completed', 0)))} görev\n"
+    else:
+        text += f"\n❌ Henüz katılmadın. /join_{event.get('id')} ile katılabilirsin.\n"
+    
+    return text
+
+
+# --- Command Handlers ---
+
+@router.message(CommandStart())
+async def cmd_start(message: Message):
+    """Bot başlatma - Telegram user'ı NovaCore'a link et."""
+    telegram_user_id = message.from_user.id
+    username = message.from_user.username
+    first_name = message.from_user.first_name
+    last_name = message.from_user.last_name
+    
+    # Start param kontrolü (eğer varsa)
+    start_param = None
+    if message.text and len(message.text.split()) > 1:
+        start_param = message.text.split()[1]
+    
+    try:
+        # NovaCore'a link et
+        result = await api_client.link_user(
+            telegram_user_id=telegram_user_id,
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            start_param=start_param,
+        )
+        
+        if result.get("success"):
+            await message.answer(
+                f"✨ {bold('Hoş geldin!')}\n\n"
+                f"NovaCore'a bağlandın.\n"
+                f"User ID: {code(str(result.get('user_id', 'N/A')))}\n\n"
+                f"Komutlar için /help yazabilirsin."
+            )
+        else:
+            await message.answer("❌ Bağlantı hatası. Lütfen tekrar dene.")
+    except Exception as e:
+        await message.answer(f"❌ Hata: {str(e)}")
+
+
+@router.message(Command("help"))
+async def cmd_help(message: Message):
+    """Yardım menüsü."""
+    help_text = f"""
+{bold('📚 NasipQuest Bot Komutları')}
+
+{bold('Temel:')}
+/start - Bot'u başlat ve NovaCore'a bağlan
+/help - Bu yardım menüsü
+/profile - Profil bilgilerini göster
+/wallet - Cüzdan ve XP bilgisi
+
+{bold('Görevler:')}
+/tasks - Aktif görevleri listele
+/complete <task_id> - Görevi tamamla
+
+{bold('Eventler:')}
+/events - Aktif event'leri göster
+/nasipfriday - Nasip Friday event'i
+/war - Quest War leaderboard
+
+{bold('Sosyal:')}
+/leaderboard - Global leaderboard
+/me - Detaylı profil kartı
+/refer <code> - Referral ödülü talep et
+
+{bold('Yardım:')}
+/help - Bu menü
+"""
+    await message.answer(help_text)
+
+
+@router.message(Command("profile", "wallet"))
+async def cmd_profile(message: Message):
+    """Profil ve cüzdan bilgisi."""
+    telegram_user_id = message.from_user.id
+    
+    try:
+        profile = await api_client.get_profile(telegram_user_id)
+        text = format_profile(profile)
+        await message.answer(text, parse_mode="Markdown")
+    except Exception as e:
+        await message.answer(f"❌ Hata: {str(e)}")
+
+
+@router.message(Command("tasks"))
+async def cmd_tasks(message: Message):
+    """Görev listesi."""
+    telegram_user_id = message.from_user.id
+    
+    try:
+        tasks_data = await api_client.get_tasks(telegram_user_id)
+        tasks = tasks_data.get("tasks", [])
+        
+        if not tasks:
+            await message.answer("📋 Şu an aktif görev yok.")
+            return
+        
+        text = f"{bold('📋 Aktif Görevler')}\n\n"
+        for task in tasks:
+            text += format_task(task)
+            text += "\n"
+        
+        # Inline keyboard ile görev tamamlama butonları
+        keyboard = []
+        for task in tasks[:5]:  # Max 5 görev
+            if task.get("status") == "available":
+                keyboard.append([
+                    InlineKeyboardButton(
+                        text=f"✅ {task.get('title', task.get('id'))}",
+                        callback_data=f"complete_{task.get('id')}"
+                    )
+                ])
+        
+        reply_markup = InlineKeyboardMarkup(inline_keyboard=keyboard) if keyboard else None
+        
+        await message.answer(text, parse_mode="Markdown", reply_markup=reply_markup)
+    except Exception as e:
+        await message.answer(f"❌ Hata: {str(e)}")
+
+
+@router.message(Command("complete"))
+async def cmd_complete(message: Message):
+    """Görev tamamlama."""
+    telegram_user_id = message.from_user.id
+    
+    # Komuttan task_id al
+    parts = message.text.split()
+    if len(parts) < 2:
+        await message.answer("❌ Kullanım: /complete <task_id>\nÖrnek: /complete daily_login")
+        return
+    
+    task_id = parts[1]
+    
+    try:
+        result = await api_client.submit_task(
+            telegram_user_id=telegram_user_id,
+            task_id=task_id,
+            proof="completed_via_bot",
+        )
+        
+        if result.get("success"):
+            await message.answer(
+                f"✅ {result.get('message', 'Görev tamamlandı!')}\n"
+                f"Yeni bakiye: {code(result.get('new_balance', '0'))} NCR\n"
+                f"Yeni XP: {code(str(result.get('new_xp_total', 0)))}",
+                parse_mode="Markdown"
+            )
+        else:
+            await message.answer("❌ Görev tamamlanamadı.")
+    except Exception as e:
+        await message.answer(f"❌ Hata: {str(e)}")
+
+
+@router.message(Command("events"))
+async def cmd_events(message: Message):
+    """Aktif event'leri listele."""
+    telegram_user_id = message.from_user.id
+    
+    try:
+        events_data = await api_client.get_active_events(telegram_user_id)
+        events = events_data.get("events", [])
+        
+        if not events:
+            await message.answer("🔥 Şu an aktif event yok.")
+            return
+        
+        text = f"{bold('🔥 Aktif Eventler')}\n\n"
+        for event in events:
+            text += format_event(event)
+            text += "\n"
+        
+        # Join butonları
+        keyboard = []
+        for event in events[:5]:
+            if not event.get("is_joined"):
+                keyboard.append([
+                    InlineKeyboardButton(
+                        text=f"🎯 {event.get('name', 'Event')} - Katıl",
+                        callback_data=f"join_event_{event.get('id')}"
+                    )
+                ])
+        
+        reply_markup = InlineKeyboardMarkup(inline_keyboard=keyboard) if keyboard else None
+        
+        await message.answer(text, parse_mode="Markdown", reply_markup=reply_markup)
+    except Exception as e:
+        await message.answer(f"❌ Hata: {str(e)}")
+
+
+@router.message(Command("nasipfriday"))
+async def cmd_nasipfriday(message: Message):
+    """Nasip Friday event'i."""
+    telegram_user_id = message.from_user.id
+    
+    try:
+        events_data = await api_client.get_active_events(telegram_user_id)
+        events = events_data.get("events", [])
+        
+        # Nasip Friday event'ini bul
+        nasip_friday = None
+        for event in events:
+            if event.get("event_type") == "NASIP_FRIDAY":
+                nasip_friday = event
+                break
+        
+        if not nasip_friday:
+            await message.answer("🔥 Şu an Nasip Friday event'i aktif değil.")
+            return
+        
+        text = format_event(nasip_friday)
+        
+        keyboard = None
+        if not nasip_friday.get("is_joined"):
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+                InlineKeyboardButton(
+                    text="🎯 Nasip Friday'e Katıl",
+                    callback_data=f"join_event_{nasip_friday.get('id')}"
+                )
+            ]])
+        
+        await message.answer(text, parse_mode="Markdown", reply_markup=keyboard)
+    except Exception as e:
+        await message.answer(f"❌ Hata: {str(e)}")
+
+
+@router.message(Command("war"))
+async def cmd_war(message: Message):
+    """Quest War leaderboard."""
+    telegram_user_id = message.from_user.id
+    
+    try:
+        events_data = await api_client.get_active_events(telegram_user_id)
+        events = events_data.get("events", [])
+        
+        # Quest War event'ini bul
+        quest_war = None
+        for event in events:
+            if event.get("event_type") == "QUEST_WAR":
+                quest_war = event
+                break
+        
+        if not quest_war:
+            await message.answer("⚔️ Şu an Quest War event'i aktif değil.")
+            return
+        
+        # Leaderboard'u getir
+        leaderboard_data = await api_client.get_event_leaderboard(
+            event_id=quest_war.get("id"),
+            limit=10
+        )
+        
+        entries = leaderboard_data.get("entries", [])
+        
+        text = f"{bold('⚔️ Quest War Leaderboard')}\n\n"
+        for entry in entries:
+            rank = entry.get("rank", 0)
+            username = entry.get("username") or entry.get("display_name", "Anonim")
+            xp = entry.get("total_xp_earned", 0)
+            tasks = entry.get("tasks_completed", 0)
+            
+            medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else "🏅"
+            text += f"{medal} {rank}. {code(username)}\n"
+            text += f"   {code(str(xp))} XP, {code(str(tasks))} görev\n\n"
+        
+        await message.answer(text, parse_mode="Markdown")
+    except Exception as e:
+        await message.answer(f"❌ Hata: {str(e)}")
+
+
+@router.message(Command("leaderboard", "top"))
+async def cmd_leaderboard(message: Message):
+    """Global leaderboard."""
+    try:
+        leaderboard_data = await api_client.get_leaderboard(period="all_time", limit=10)
+        entries = leaderboard_data.get("entries", [])
+        
+        text = f"{bold('🏆 Global Leaderboard')}\n\n"
+        for entry in entries:
+            rank = entry.get("rank", 0)
+            username = entry.get("username") or entry.get("display_name", "Anonim")
+            xp = entry.get("xp_total", 0)
+            level = entry.get("level", 1)
+            
+            medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else "🏅"
+            text += f"{medal} {rank}. {code(username)}\n"
+            text += f"   {code(str(xp))} XP, Seviye {code(str(level))}\n\n"
+        
+        await message.answer(text, parse_mode="Markdown")
+    except Exception as e:
+        await message.answer(f"❌ Hata: {str(e)}")
+
+
+@router.message(Command("me"))
+async def cmd_me(message: Message):
+    """Detaylı profil kartı."""
+    telegram_user_id = message.from_user.id
+    
+    try:
+        profile = await api_client.get_profile_card(telegram_user_id)
+        
+        text = f"{bold('👤 Profil Kartı')}\n\n"
+        text += f"👤 {profile.get('display_name', 'Anonim')}\n"
+        text += f"⭐ XP: {code(str(profile.get('xp_total', 0)))}\n"
+        text += f"📊 Seviye: {code(str(profile.get('level', 1)))} ({profile.get('tier', 'Bronze')})\n"
+        text += f"✅ Tamamlanan Görevler: {code(str(profile.get('tasks_completed', 0)))}\n"
+        text += f"👥 Referral Sayısı: {code(str(profile.get('referrals_count', 0)))}\n"
+        
+        if profile.get('rank_all_time'):
+            text += f"🏆 Global Sıralama: {code(str(profile.get('rank_all_time')))}.\n"
+        
+        if profile.get('achievements'):
+            text += f"\n{bold('🏅 Başarılar:')}\n"
+            for achievement in profile.get('achievements', []):
+                text += f"  • {achievement}\n"
+        
+        await message.answer(text, parse_mode="Markdown")
+    except Exception as e:
+        await message.answer(f"❌ Hata: {str(e)}")
+
+
+# --- Callback Handlers ---
+
+@router.callback_query(F.data.startswith("complete_"))
+async def callback_complete_task(callback: CallbackQuery):
+    """Görev tamamlama callback."""
+    task_id = callback.data.replace("complete_", "")
+    telegram_user_id = callback.from_user.id
+    
+    await callback.answer("Görev tamamlanıyor...")
+    
+    try:
+        result = await api_client.submit_task(
+            telegram_user_id=telegram_user_id,
+            task_id=task_id,
+            proof="completed_via_bot",
+        )
+        
+        if result.get("success"):
+            await callback.message.edit_text(
+                f"✅ {result.get('message', 'Görev tamamlandı!')}\n"
+                f"Yeni bakiye: {code(result.get('new_balance', '0'))} NCR\n"
+                f"Yeni XP: {code(str(result.get('new_xp_total', 0)))}",
+                parse_mode="Markdown"
+            )
+        else:
+            await callback.answer("❌ Görev tamamlanamadı.", show_alert=True)
+    except Exception as e:
+        await callback.answer(f"❌ Hata: {str(e)}", show_alert=True)
+
+
+@router.callback_query(F.data.startswith("join_event_"))
+async def callback_join_event(callback: CallbackQuery):
+    """Event'e katılma callback."""
+    event_id = int(callback.data.replace("join_event_", ""))
+    telegram_user_id = callback.from_user.id
+    
+    await callback.answer("Event'e katılıyorsun...")
+    
+    try:
+        result = await api_client.join_event(
+            telegram_user_id=telegram_user_id,
+            event_id=event_id,
+        )
+        
+        if result.get("success"):
+            await callback.message.edit_text(
+                f"✅ {result.get('message', 'Event\'e katıldın!')}",
+                parse_mode="Markdown"
+            )
+        else:
+            await callback.answer("❌ Event'e katılamadın.", show_alert=True)
+    except Exception as e:
+        await callback.answer(f"❌ Hata: {str(e)}", show_alert=True)
+

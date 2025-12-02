@@ -1,0 +1,64 @@
+services:
+  novacore-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: novacore-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=dev
+      - DATABASE_URL=postgresql+asyncpg://novacore:novacore@postgres:5432/novacore
+      - DATABASE_URL_SYNC=postgresql://novacore:novacore@postgres:5432/novacore
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-prod}
+      - NCR_TREASURY_USER_ID=1
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./app:/code/app
+    restart: unless-stopped
+    networks:
+      - novacore-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: novacore-postgres
+    environment:
+      POSTGRES_USER: novacore
+      POSTGRES_PASSWORD: novacore
+      POSTGRES_DB: novacore
+    ports:
+      - "5433:5432"  # External port 5433, internal 5432
+    volumes:
+      - novacore-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U novacore -d novacore"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - novacore-network
+
+  # Redis - opsiyonel, v0.2 için
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: novacore-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - novacore-redis-data:/data
+  #   restart: unless-stopped
+  #   networks:
+  #     - novacore-network
+
+volumes:
+  novacore-postgres-data:
+  # novacore-redis-data:
+
+networks:
+  novacore-network:
+    driver: bridge
+

@@ -1,0 +1,76 @@
+name: Aurora State Network - Smoke Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: novacore
+          POSTGRES_PASSWORD: novacore
+          POSTGRES_DB: novacore
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install alembic sqlmodel sqlalchemy asyncpg pydantic-settings fastapi uvicorn python-jose passlib structlog
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql+asyncpg://novacore:novacore@localhost:5433/novacore
+          DATABASE_URL_SYNC: postgresql://novacore:novacore@localhost:5433/novacore
+        run: |
+          alembic upgrade head
+
+      - name: Start API server
+        env:
+          DATABASE_URL: postgresql+asyncpg://novacore:novacore@localhost:5433/novacore
+          DATABASE_URL_SYNC: postgresql://novacore:novacore@localhost:5433/novacore
+          ENV: dev
+          JWT_SECRET: test-secret
+        run: |
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          sleep 10
+          curl -f http://localhost:8000/health || exit 1
+
+      - name: Run consent flow test
+        run: |
+          chmod +x scripts/test_consent_flow.sh
+          ./scripts/test_consent_flow.sh
+
+      - name: Run full smoke test
+        run: |
+          chmod +x scripts/smoke_test.sh
+          ./scripts/smoke_test.sh
+
+      - name: Run enforcement test
+        run: |
+          chmod +x scripts/test_enforcement.sh
+          ./scripts/test_enforcement.sh
+
