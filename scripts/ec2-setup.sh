@@ -26,9 +26,7 @@ sudo apt-get install -y \
     wget \
     git \
     build-essential \
-    python3.11 \
-    python3.11-venv \
-    python3-pip \
+    software-properties-common \
     postgresql \
     postgresql-contrib \
     nginx \
@@ -40,14 +38,21 @@ sudo apt-get install -y \
     htop \
     vim
 
-# 3. Node.js LTS kurulumu (npm ile gelen versiyon eski olabilir)
+# 3. Python 3.11 kurulumu (Ubuntu 22.04 için)
+echo -e "${GREEN}🐍 Python 3.11 kuruluyor...${NC}"
+# Ubuntu 22.04'te Python 3.10 varsayılan, 3.11 için deadsnakes PPA ekle
+sudo add-apt-repository ppa:deadsnakes/ppa -y
+sudo apt-get update
+sudo apt-get install -y python3.11 python3.11-venv python3.11-dev python3-pip
+
+# 4. Node.js LTS kurulumu (npm ile gelen versiyon eski olabilir)
 echo -e "${GREEN}📦 Node.js LTS kuruluyor...${NC}"
 if ! command -v node &> /dev/null || [ "$(node -v | cut -d'v' -f2 | cut -d'.' -f1)" -lt 20 ]; then
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt-get install -y nodejs
 fi
 
-# 4. PostgreSQL yapılandırması
+# 5. PostgreSQL yapılandırması
 echo -e "${GREEN}🗄️  PostgreSQL yapılandırılıyor...${NC}"
 sudo systemctl start postgresql
 sudo systemctl enable postgresql
@@ -60,33 +65,35 @@ GRANT ALL PRIVILEGES ON DATABASE novacore TO novacore;
 \q
 EOF
 
-# 5. Python virtual environment
+# 6. Python virtual environment
 echo -e "${GREEN}🐍 Python virtual environment oluşturuluyor...${NC}"
 cd /opt
 sudo mkdir -p novacore
 sudo chown $USER:$USER novacore
 cd novacore
 
-python3.11 -m venv .venv
+# Python 3.11'i kullan (veya mevcut Python versiyonunu)
+PYTHON_CMD=$(which python3.11 || which python3)
+$PYTHON_CMD -m venv .venv
 source .venv/bin/activate
 
-# 6. Projeyi klonla (GitHub'dan)
+# 7. Projeyi klonla (GitHub'dan)
 echo -e "${GREEN}📥 Proje klonlanıyor...${NC}"
 if [ ! -d "NovaCore" ]; then
     git clone https://github.com/YOUR_USERNAME/NovaCore.git
 fi
 cd NovaCore
 
-# 7. Python dependencies
+# 8. Python dependencies
 echo -e "${GREEN}📦 Python dependencies kuruluyor...${NC}"
 pip install --upgrade pip
 pip install -e .
 
-# 8. Node.js dependencies
+# 9. Node.js dependencies
 echo -e "${GREEN}📦 Node.js dependencies kuruluyor...${NC}"
 npm install
 
-# 9. Environment variables
+# 10. Environment variables
 echo -e "${GREEN}⚙️  Environment variables yapılandırılıyor...${NC}"
 if [ ! -f .env ]; then
     cat > .env <<EOF
@@ -111,11 +118,11 @@ NEXT_PUBLIC_AURORA_ENV=production
 EOF
 fi
 
-# 10. Database migration
+# 11. Database migration
 echo -e "${GREEN}🗄️  Database migration yapılıyor...${NC}"
 alembic upgrade head
 
-# 11. Cloudflare Tunnel kurulumu
+# 12. Cloudflare Tunnel kurulumu
 echo -e "${GREEN}🌐 Cloudflare Tunnel kuruluyor...${NC}"
 if ! command -v cloudflared &> /dev/null; then
     curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o /tmp/cloudflared.deb
@@ -123,7 +130,7 @@ if ! command -v cloudflared &> /dev/null; then
     rm /tmp/cloudflared.deb
 fi
 
-# 12. Systemd service'leri oluştur
+# 13. Systemd service'leri oluştur
 echo -e "${GREEN}⚙️  Systemd service'leri oluşturuluyor...${NC}"
 
 # Backend service
@@ -182,20 +189,20 @@ RestartSec=10
 WantedBy=multi-user.target
 EOF
 
-# 13. Firewall yapılandırması
+# 14. Firewall yapılandırması
 echo -e "${GREEN}🔥 Firewall yapılandırılıyor...${NC}"
 sudo ufw allow 22/tcp
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw --force enable
 
-# 14. Production build
+# 15. Production build
 echo -e "${GREEN}🏗️  Production build yapılıyor...${NC}"
 cd apps/citizen-portal
 npm run build
 cd ../..
 
-# 15. Service'leri başlat
+# 16. Service'leri başlat
 echo -e "${GREEN}🚀 Service'ler başlatılıyor...${NC}"
 sudo systemctl daemon-reload
 sudo systemctl enable novacore-backend
@@ -206,7 +213,7 @@ sudo systemctl start novacore-backend
 sudo systemctl start novacore-frontend
 sudo systemctl start novacore-cloudflared
 
-# 16. Durum kontrolü
+# 17. Durum kontrolü
 echo ""
 echo -e "${GREEN}✅ Kurulum tamamlandı!${NC}"
 echo ""
