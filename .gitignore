@@ -1,3 +1,8 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
 # Python
 __pycache__/
 *.py[cod]
@@ -16,19 +21,49 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
-.venv/
-venv/
-ENV/
-env/
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.pytest_cache/
+.hypothesis/
+.pytype/
+cython_debug/
+*.pyc
+*.pyo
+*.pyd
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
 # Environment variables
 .env
@@ -36,67 +71,60 @@ env/
 .env.*.local
 .env.production
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
 # Next.js
 .next/
 out/
 build/
-dist/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
 
 # Logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 lerna-debug.log*
-.pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Misc
+*.tgz
+*.tar.gz
+.cache/
+.parcel-cache/
+.turbo/
+.swc/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+.dockerignore
 
 # Cloudflare
 .cloudflared/
-*.pem
+cloudflared-*.json
 
-# PID files
-*.pid
-.backend.pid
-.frontend.pid
-.tunnel.pid
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Temporary files
-tmp/
-temp/
 *.tmp
-
-# Node modules (monorepo root)
-node_modules/
-
-# Package manager locks (keep one)
-# package-lock.json
-# yarn.lock
-# pnpm-lock.yaml
-
-# Testing
-.coverage
-.pytest_cache/
-htmlcov/
-.tox/
-
-# Alembic
-alembic/versions/*.pyc
-
-# TypeScript
-*.tsbuildinfo
-
-# Production builds
-apps/*/build/
-apps/*/.next/
-apps/*/out/
-packages/*/dist/
-packages/*/build/
-
+*.temp
+*.bak
+*.swp
+*.swo
