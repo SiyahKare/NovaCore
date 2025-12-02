@@ -42,7 +42,7 @@ ssh -i your-key.pem ubuntu@YOUR_ELASTIC_IP
 curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/NovaCore/main/scripts/ec2-setup.sh | bash
 
 # veya manuel olarak
-git clone https://github.com/YOUR_USERNAME/NovaCore.git
+git clone https://github.com/siyahkare/NovaCore.git
 cd NovaCore
 chmod +x scripts/ec2-setup.sh
 ./scripts/ec2-setup.sh

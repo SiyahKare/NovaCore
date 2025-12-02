@@ -2,6 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@aurora/ui', '@aurora/hooks'],
+  // Standalone output for Docker
+  output: 'standalone',
   // Disable ESLint during build for now
   eslint: {
     ignoreDuringBuilds: true,

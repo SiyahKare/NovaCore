@@ -1,0 +1,70 @@
+# Frontend Dockerfile (Next.js)
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+WORKDIR /app
+
+# Copy root package files
+COPY package.json package-lock.json* ./
+
+# Copy all package.json files for monorepo
+COPY apps/citizen-portal/package.json ./apps/citizen-portal/
+COPY packages/aurora-ui/package.json ./packages/aurora-ui/
+COPY packages/aurora-hooks/package.json ./packages/aurora-hooks/
+
+# Install root dependencies
+RUN npm ci
+
+# Install workspace dependencies
+WORKDIR /app/apps/citizen-portal
+RUN npm install
+
+WORKDIR /app/packages/aurora-ui
+RUN npm install
+
+WORKDIR /app/packages/aurora-hooks
+RUN npm install
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+
+# Copy all files
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Set environment variables for build
+ENV NEXT_PUBLIC_AURORA_API_URL=${NEXT_PUBLIC_AURORA_API_URL:-https://api.novacore.siyahkare.com/api/v1}
+ENV NEXT_PUBLIC_AURORA_ENV=production
+
+# Build Next.js app
+WORKDIR /app/apps/citizen-portal
+RUN npm run build
+
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy built application from standalone output
+COPY --from=builder --chown=nextjs:nodejs /app/apps/citizen-portal/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/citizen-portal/.next/static ./apps/citizen-portal/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/citizen-portal/public ./apps/citizen-portal/public
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+WORKDIR /app/apps/citizen-portal
+
+CMD ["node", "server.js"]
+

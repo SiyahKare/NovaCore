@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: novacore-postgres
+    environment:
+      POSTGRES_USER: novacore
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_THIS_PASSWORD}
+      POSTGRES_DB: novacore
+    ports:
+      - "127.0.0.1:5432:5432"  # Sadece localhost'tan erişilebilir
+    volumes:
+      - novacore-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U novacore -d novacore"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - novacore-network
+
+  novacore-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: novacore-api
+    ports:
+      - "127.0.0.1:8000:8000"  # Sadece localhost'tan erişilebilir (Cloudflare Tunnel üzerinden)
+    environment:
+      - ENV=prod
+      - DATABASE_URL=postgresql+asyncpg://novacore:${POSTGRES_PASSWORD:-CHANGE_THIS_PASSWORD}@postgres:5432/novacore
+      - DATABASE_URL_SYNC=postgresql://novacore:${POSTGRES_PASSWORD:-CHANGE_THIS_PASSWORD}@postgres:5432/novacore
+      - JWT_SECRET=${JWT_SECRET:-CHANGE_THIS_IN_PRODUCTION}
+      - JWT_ALGORITHM=HS256
+      - JWT_EXPIRE_MINUTES=10080
+      - NCR_TREASURY_USER_ID=1
+      - LOG_LEVEL=INFO
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://novacore.siyahkare.com,https://api.novacore.siyahkare.com}
+      - TELEGRAM_BRIDGE_TOKEN=${TELEGRAM_BRIDGE_TOKEN:-}
+      - TELEGRAM_LINK_SECRET=${TELEGRAM_LINK_SECRET:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./app:/code/app  # Development için hot-reload (production'da kaldırılabilir)
+    restart: unless-stopped
+    networks:
+      - novacore-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  novacore-postgres-data:
+    driver: local
+
+networks:
+  novacore-network:
+    driver: bridge
+
