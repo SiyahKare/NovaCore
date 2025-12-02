@@ -44,3 +44,4 @@ See [EC2 Deployment Guide](./docs/EC2_DEPLOYMENT.md) for EC2 setup, or [Cloudfla
 ## 📝 License
 
 [Your License Here]
+# NovaCore

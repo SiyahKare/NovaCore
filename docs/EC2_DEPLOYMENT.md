@@ -97,8 +97,9 @@ cd /opt
 sudo mkdir -p novacore
 sudo chown $USER:$USER novacore
 cd novacore
-git clone https://github.com/YOUR_USERNAME/NovaCore.git
-cd NovaCore
+# ÖNCE: YOUR_USERNAME ve REPO_NAME'i değiştir
+git clone https://github.com/YOUR_USERNAME/REPO_NAME.git
+cd REPO_NAME
 ```
 
 #### Adım 6: Python Environment
