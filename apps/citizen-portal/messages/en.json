@@ -1,0 +1,66 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "search": "Search",
+    "filter": "Filter",
+    "close": "Close"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "identity": "Identity",
+    "consent": "Consent",
+    "justice": "Justice",
+    "academy": "Academy",
+    "admin": "Admin",
+    "about": "About"
+  },
+  "auth": {
+    "login": "Sign In",
+    "register": "Sign Up",
+    "logout": "Sign Out",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password",
+    "rememberMe": "Remember Me",
+    "connectTelegram": "Connect Telegram",
+    "telegramConnected": "Telegram connected",
+    "telegramNotConnected": "Telegram not connected"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome",
+    "novaScore": "Nova Score",
+    "regime": "Regime",
+    "policy": "Policy",
+    "violations": "Violations",
+    "recentActivity": "Recent Activity"
+  },
+  "identity": {
+    "title": "Your Identity",
+    "digitalCitizenship": "Digital Citizenship Profile",
+    "telegramId": "Telegram ID",
+    "email": "Email",
+    "displayName": "Display Name",
+    "wallet": "Wallet"
+  },
+  "onboarding": {
+    "title": "Welcome",
+    "step1": "Authentication",
+    "step2": "Telegram Connection",
+    "step3": "Consent",
+    "step4": "Complete",
+    "emailAuth": "Sign in with Email",
+    "googleAuth": "Sign in with Google",
+    "devMode": "Developer Mode"
+  }
+}
+

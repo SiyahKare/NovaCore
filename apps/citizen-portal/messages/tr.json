@@ -1,0 +1,66 @@
+{
+  "common": {
+    "loading": "Yükleniyor...",
+    "error": "Hata",
+    "success": "Başarılı",
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "back": "Geri",
+    "next": "İleri",
+    "submit": "Gönder",
+    "search": "Ara",
+    "filter": "Filtrele",
+    "close": "Kapat"
+  },
+  "nav": {
+    "dashboard": "Kontrol Paneli",
+    "identity": "Kimlik",
+    "consent": "Onay",
+    "justice": "Adalet",
+    "academy": "Akademi",
+    "admin": "Yönetim",
+    "about": "Hakkında"
+  },
+  "auth": {
+    "login": "Giriş Yap",
+    "register": "Kayıt Ol",
+    "logout": "Çıkış Yap",
+    "email": "E-posta",
+    "password": "Şifre",
+    "forgotPassword": "Şifremi Unuttum",
+    "rememberMe": "Beni Hatırla",
+    "connectTelegram": "Telegram Bağla",
+    "telegramConnected": "Telegram bağlı",
+    "telegramNotConnected": "Telegram bağlı değil"
+  },
+  "dashboard": {
+    "title": "Kontrol Paneli",
+    "welcome": "Hoş geldiniz",
+    "novaScore": "Nova Skor",
+    "regime": "Rejim",
+    "policy": "Politika",
+    "violations": "İhlaller",
+    "recentActivity": "Son Aktiviteler"
+  },
+  "identity": {
+    "title": "Kimliğiniz",
+    "digitalCitizenship": "Dijital Vatandaşlık Profili",
+    "telegramId": "Telegram ID",
+    "email": "E-posta",
+    "displayName": "Görünen İsim",
+    "wallet": "Cüzdan"
+  },
+  "onboarding": {
+    "title": "Hoş Geldiniz",
+    "step1": "Kimlik Doğrulama",
+    "step2": "Telegram Bağlantısı",
+    "step3": "Onay",
+    "step4": "Tamamlandı",
+    "emailAuth": "E-posta ile Giriş",
+    "googleAuth": "Google ile Giriş",
+    "devMode": "Geliştirici Modu"
+  }
+}
+

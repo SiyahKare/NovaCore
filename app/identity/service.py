@@ -2,11 +2,11 @@
 NovaCore Identity Service - User & Auth Logic
 """
 from datetime import datetime
-
-import bcrypt
 from fastapi import HTTPException, status
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
+import bcrypt
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -179,34 +179,48 @@ class IdentityService:
 
     async def register_email(self, payload: EmailRegisterRequest) -> AuthResponse:
         """Register a new user with email and password."""
-        # Check if email already exists
         existing_user = await self.get_user_by_email(payload.email)
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Bu email adresi zaten kullanılıyor",
+                detail="Email already registered",
             )
 
         # Hash password
-        password_hash = bcrypt.hashpw(
-            payload.password.encode("utf-8"), bcrypt.gensalt()
-        ).decode("utf-8")
+        salt = bcrypt.gensalt(rounds=12)
+        hashed_password = bcrypt.hashpw(payload.password.encode('utf-8'), salt).decode('utf-8')
 
-        # Create user
+        # Generate synthetic telegram_id for web users (900M+ range)
+        import hashlib
+        import time
+        email_hash = int(hashlib.md5(payload.email.encode()).hexdigest()[:8], 16) % 1000000000
+        telegram_id = 900000000 + (email_hash % 100000000)
+
+        # Check for collision and retry if needed
+        max_retries = 5
+        for attempt in range(max_retries):
+            existing = await self.get_user_by_telegram_id(telegram_id)
+            if not existing:
+                break
+            telegram_id = 900000000 + ((email_hash + int(time.time() * 1000) + attempt) % 100000000)
+
         user = await self.create_user(
+            telegram_id=telegram_id,
             email=payload.email,
-            password_hash=password_hash,
-            username=payload.username,
-            display_name=payload.display_name,
+            password_hash=hashed_password,
+            display_name=payload.display_name or payload.email.split("@")[0],
+            telegram_data={"source": "email", "email": payload.email},
         )
-
         await self.session.commit()
         await self.session.refresh(user)
 
-        # Create JWT token
         access_token = create_access_token(user_id=user.id)
-
-        logger.info("email_register", user_id=user.id, email=payload.email)
+        
+        logger.info(
+            "email_register",
+            user_id=user.id,
+            email=payload.email,
+        )
 
         return AuthResponse(
             access_token=access_token,
@@ -216,34 +230,34 @@ class IdentityService:
         )
 
     async def login_email(self, payload: EmailLoginRequest) -> AuthResponse:
-        """Login user with email and password."""
-        # Get user by email
+        """Authenticate user with email and password."""
         user = await self.get_user_by_email(payload.email)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Email veya şifre hatalı",
+                detail="Incorrect email or password",
             )
 
-        # Check password
         if not user.password_hash:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Bu hesap için şifre ayarlanmamış",
+                detail="Email account not set up. Please register first.",
             )
 
-        if not bcrypt.checkpw(
-            payload.password.encode("utf-8"), user.password_hash.encode("utf-8")
-        ):
+        # Verify password
+        if not bcrypt.checkpw(payload.password.encode('utf-8'), user.password_hash.encode('utf-8')):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Email veya şifre hatalı",
+                detail="Incorrect email or password",
             )
 
-        # Create JWT token
         access_token = create_access_token(user_id=user.id)
-
-        logger.info("email_login", user_id=user.id, email=payload.email)
+        
+        logger.info(
+            "email_login",
+            user_id=user.id,
+            email=payload.email,
+        )
 
         return AuthResponse(
             access_token=access_token,

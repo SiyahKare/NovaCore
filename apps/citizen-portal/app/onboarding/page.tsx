@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ConsentFlow, NovaScoreCard, RegimeBadge } from '@aurora/ui'
-import { useNovaScore, useJustice, useAuroraEvents, useConsentFlow, useAuroraAPI } from '@aurora/hooks'
+import { useNovaScore, useJustice, useAuroraEvents, useConsentFlow } from '@aurora/hooks'
 import { setToken, getToken } from '@/lib/auth'
 import type { NovaScorePayload, CpState } from '@aurora/ui'
 
@@ -256,21 +256,6 @@ function StepAuth({ onNext }: { onNext: () => void }) {
             <span className="text-purple-400">→</span>
           </button>
         </div>
-
-        {/* Telegram Connect (Optional) */}
-        {hasToken && (
-          <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <h3 className="text-sm font-semibold text-blue-200">📱 Telegram Hesabını Bağla (Opsiyonel)</h3>
-                <p className="text-xs text-blue-300/70 mt-1">
-                  Telegram bot üzerinden görevleri tamamla, event'lere katıl
-                </p>
-              </div>
-            </div>
-            <TelegramConnectButton />
-          </div>
-        )}
       </div>
 
       <div className="flex justify-end pt-4">
@@ -283,83 +268,6 @@ function StepAuth({ onNext }: { onNext: () => void }) {
         </button>
       </div>
     </>
-  )
-}
-
-/* --- Telegram Connect Button Component --- */
-
-function TelegramConnectButton() {
-  const { fetchAPI } = useAuroraAPI()
-  const [linking, setLinking] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-
-  const handleConnect = async () => {
-    setLinking(true)
-    setError(null)
-
-    try {
-      // Check if Telegram WebApp is available
-      if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
-        const tg = (window as any).Telegram.WebApp
-        
-        // Get Telegram user data
-        const tgUser = tg.initDataUnsafe?.user
-        if (!tgUser) {
-          throw new Error('Telegram user data not available. Please open this page from Telegram.')
-        }
-
-        // Link Telegram account
-        const { data, error: apiError } = await fetchAPI<{ id: number; telegram_id: number }>(
-          `/identity/telegram/link?telegram_user_id=${tgUser.id}&telegram_username=${tgUser.username || ''}&telegram_first_name=${tgUser.first_name || ''}&telegram_last_name=${tgUser.last_name || ''}`
-        )
-
-        if (apiError) {
-          throw new Error(apiError.detail || 'Failed to link Telegram account')
-        }
-
-        if (data) {
-          setSuccess(true)
-        }
-      } else {
-        // Fallback: Open Telegram bot
-        const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'nasipquest_bot'
-        const botUrl = `https://t.me/${botUsername}?start=link_web`
-        window.open(botUrl, '_blank')
-        
-        setError('Telegram WebApp bulunamadı. Telegram bot\'u açtık, oradan bağlantı kurabilirsin.')
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect Telegram')
-    } finally {
-      setLinking(false)
-    }
-  }
-
-  if (success) {
-    return (
-      <div className="text-xs text-green-300">
-        ✅ Telegram hesabı başarıyla bağlandı!
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-2">
-      <button
-        onClick={handleConnect}
-        disabled={linking}
-        className="w-full rounded-lg border border-blue-500/50 bg-blue-500/20 px-3 py-2 text-xs text-blue-200 hover:bg-blue-500/30 transition disabled:opacity-50"
-      >
-        {linking ? 'Bağlanıyor...' : '📱 Telegram Hesabını Bağla'}
-      </button>
-      {error && (
-        <p className="text-xs text-red-300">{error}</p>
-      )}
-      <p className="text-xs text-gray-400">
-        Telegram MiniApp'ten açıldıysan otomatik bağlanır. Web'den açıldıysan bot açılacak.
-      </p>
-    </div>
   )
 }
 

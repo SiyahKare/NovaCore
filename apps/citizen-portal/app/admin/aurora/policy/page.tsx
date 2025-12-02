@@ -35,9 +35,9 @@ export default function AuroraPolicyPage() {
         <div className="rounded-2xl border border-white/10 bg-black/60 p-4 text-xs text-gray-300">
           <div className="flex items-center justify-between mb-2">
             <span className="font-semibold text-gray-100">Policy History</span>
-            {policy && 'onchain_address' in policy && (policy as any).onchain_address && (
+            {policy?.onchain_address && (
               <span className="text-[10px] text-purple-300">
-                {String((policy as any).onchain_address).slice(0, 6)}...{String((policy as any).onchain_address).slice(-4)}
+                {policy.onchain_address.slice(0, 6)}...{policy.onchain_address.slice(-4)}
               </span>
             )}
           </div>

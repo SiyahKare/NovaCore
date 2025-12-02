@@ -6,6 +6,7 @@ import { useCurrentCitizen } from '@aurora/hooks'
 import { RegimeBadge } from '@aurora/ui'
 import { clearToken } from '@/lib/auth'
 import { NAV_ITEMS } from '@/lib/constants'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
 export function AuroraNav() {
   const pathname = usePathname()
@@ -28,6 +29,7 @@ export function AuroraNav() {
       </Link>
 
       <div className="flex gap-6 text-sm items-center">
+        <LanguageSwitcher />
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href || (item.href === '/academy' && pathname?.startsWith('/academy'))
           return (

@@ -135,11 +135,22 @@ function IdentityInner() {
           </div>
           <div>
             <p className="text-sm text-slate-400 mb-1">Telegram ID</p>
-            <p className={`text-sm ${citizen.telegram_id && citizen.telegram_id > 0 ? 'text-slate-300' : 'text-yellow-500'}`}>
-              {citizen.telegram_id && citizen.telegram_id > 0 
-                ? `${citizen.telegram_id}${telegramStatus?.is_linked ? ' ✅' : ''}`
-                : 'Not connected (dummy)'}
-            </p>
+            <div className="flex items-center gap-3">
+              <p className={`text-sm ${citizen.telegram_id && citizen.telegram_id > 0 ? 'text-slate-300' : 'text-yellow-500'}`}>
+                {citizen.telegram_id && citizen.telegram_id > 0 
+                  ? `${citizen.telegram_id}${telegramStatus?.is_linked ? ' ✅' : ''}`
+                  : 'Not connected (dummy)'}
+              </p>
+              {(!citizen.telegram_id || citizen.telegram_id <= 0 || !telegramStatus?.is_linked) && (
+                <button
+                  onClick={handleConnectTelegram}
+                  disabled={linking}
+                  className="rounded-lg border border-purple-500/50 bg-purple-500/20 px-3 py-1.5 text-xs text-purple-200 hover:bg-purple-500/30 transition disabled:opacity-50"
+                >
+                  {linking ? 'Connecting...' : 'Connect Telegram'}
+                </button>
+              )}
+            </div>
             {telegramStatus?.is_linked && telegramStatus.telegram_username && (
               <p className="text-xs text-slate-400 mt-1">
                 @{telegramStatus.telegram_username}
@@ -155,6 +166,25 @@ function IdentityInner() {
         </div>
       </div>
 
+      {error && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+          <div className="text-sm font-medium text-red-300">Hata</div>
+          <div className="text-xs text-red-200 mt-1">{error}</div>
+        </div>
+      )}
+
+      {!telegramStatus?.is_linked && (
+        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4">
+          <div className="text-sm font-medium text-yellow-300 mb-2">Telegram Hesabını Bağla</div>
+          <div className="text-xs text-yellow-200 mb-3">
+            Telegram hesabını bağlayarak bot üzerinden görevleri tamamlayabilir, event'lere katılabilir ve daha fazla özellik kullanabilirsin.
+          </div>
+          <div className="text-xs text-gray-400 space-y-1">
+            <p>• Telegram MiniApp'ten açıldıysan "Connect Telegram" butonuna tıkla</p>
+            <p>• Web'den açıldıysan Telegram bot'u açılacak, oradan bağlantı kurabilirsin</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

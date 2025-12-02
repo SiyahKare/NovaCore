@@ -1,16 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuroraAPI } from './useAuroraAPI'
 
-// Token management (client-side only)
-const getToken = (): string | null => {
-  if (typeof window === 'undefined') return null
-  try {
-    return localStorage.getItem('aurora_token')
-  } catch {
-    return null
-  }
-}
-
 export interface CitizenIdentity {
   id: number
   telegram_id: number
@@ -30,33 +20,19 @@ export function useCurrentCitizen() {
   const [error, setError] = useState<string | null>(null)
 
   const loadCitizen = useCallback(async () => {
-    // Check token first - if no token, skip API call
-    const token = getToken()
-    if (!token) {
-      setLoading(false)
-      setError(null)
-      setData(null)
-      return
-    }
-
     setLoading(true)
     setError(null)
 
-    try {
-      const { data: apiData, error: apiError } = await fetchAPI<CitizenIdentity>('/identity/me')
+    const { data: apiData, error: apiError } = await fetchAPI<CitizenIdentity>('/identity/me')
 
-      if (apiError) {
-        setError(apiError.detail || 'AUTH_ERROR')
-        setData(null)
-      } else if (apiData) {
-        setData(apiData)
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'AUTH_ERROR')
+    if (apiError) {
+      setError(apiError.detail || 'AUTH_ERROR')
       setData(null)
-    } finally {
-      setLoading(false)
+    } else if (apiData) {
+      setData(apiData)
     }
+
+    setLoading(false)
   }, [fetchAPI])
 
   useEffect(() => {

@@ -3,24 +3,23 @@ NovaCore Identity Schemas - Request/Response Models
 """
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 # ============ Email Auth ============
 class EmailLoginRequest(BaseModel):
-    """Email ve şifre ile giriş isteği."""
-
-    email: str = Field(..., description="Kullanıcı email adresi")
-    password: str = Field(..., min_length=6, description="Kullanıcı şifresi")
+    """Email login request."""
+    
+    email: EmailStr
+    password: str = Field(..., min_length=8, description="Password (min 8 characters)")
 
 
 class EmailRegisterRequest(BaseModel):
-    """Email ve şifre ile kayıt isteği."""
-
-    email: str = Field(..., description="Kullanıcı email adresi")
-    password: str = Field(..., min_length=6, description="Kullanıcı şifresi")
-    display_name: str | None = Field(None, max_length=255, description="Kullanıcı görünen adı")
-    username: str | None = Field(None, max_length=255, description="Kullanıcı adı")
+    """Email registration request."""
+    
+    email: EmailStr
+    password: str = Field(..., min_length=8, description="Password (min 8 characters)")
+    display_name: str | None = Field(None, max_length=255, description="Optional display name")
 
 
 # ============ Telegram Auth ============

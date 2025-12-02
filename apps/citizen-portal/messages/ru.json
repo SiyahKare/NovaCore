@@ -1,0 +1,66 @@
+{
+  "common": {
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "success": "Успешно",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "back": "Назад",
+    "next": "Далее",
+    "submit": "Отправить",
+    "search": "Поиск",
+    "filter": "Фильтр",
+    "close": "Закрыть"
+  },
+  "nav": {
+    "dashboard": "Панель управления",
+    "identity": "Идентичность",
+    "consent": "Согласие",
+    "justice": "Правосудие",
+    "academy": "Академия",
+    "admin": "Админ",
+    "about": "О нас"
+  },
+  "auth": {
+    "login": "Войти",
+    "register": "Зарегистрироваться",
+    "logout": "Выйти",
+    "email": "Электронная почта",
+    "password": "Пароль",
+    "forgotPassword": "Забыли пароль",
+    "rememberMe": "Запомнить меня",
+    "connectTelegram": "Подключить Telegram",
+    "telegramConnected": "Telegram подключен",
+    "telegramNotConnected": "Telegram не подключен"
+  },
+  "dashboard": {
+    "title": "Панель управления",
+    "welcome": "Добро пожаловать",
+    "novaScore": "Nova Счет",
+    "regime": "Режим",
+    "policy": "Политика",
+    "violations": "Нарушения",
+    "recentActivity": "Последняя активность"
+  },
+  "identity": {
+    "title": "Ваша идентичность",
+    "digitalCitizenship": "Профиль цифрового гражданства",
+    "telegramId": "Telegram ID",
+    "email": "Электронная почта",
+    "displayName": "Отображаемое имя",
+    "wallet": "Кошелек"
+  },
+  "onboarding": {
+    "title": "Добро пожаловать",
+    "step1": "Аутентификация",
+    "step2": "Подключение Telegram",
+    "step3": "Согласие",
+    "step4": "Завершено",
+    "emailAuth": "Войти по электронной почте",
+    "googleAuth": "Войти через Google",
+    "devMode": "Режим разработчика"
+  }
+}
+

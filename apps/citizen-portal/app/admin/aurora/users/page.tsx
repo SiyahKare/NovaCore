@@ -63,7 +63,7 @@ export default function AuroraUsersPage() {
       )
 
       if (apiError || !data) {
-        setError(apiError ? (typeof apiError === 'string' ? apiError : String(apiError)) : 'Failed to load users')
+        setError(apiError || 'Failed to load users')
         return
       }
 

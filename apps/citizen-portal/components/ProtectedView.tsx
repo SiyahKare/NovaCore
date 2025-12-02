@@ -1,6 +1,6 @@
 'use client'
 
-import React, { ReactNode } from 'react'
+import { ReactNode } from 'react'
 import { useCurrentCitizen } from '@aurora/hooks'
 import Link from 'next/link'
 
@@ -11,38 +11,6 @@ interface ProtectedViewProps {
 
 export function ProtectedView({ children, requireAdmin = false }: ProtectedViewProps) {
   const { citizen, loading, error, isAuthenticated } = useCurrentCitizen()
-
-  // Add timeout to prevent infinite loading
-  const [loadingTimeout, setLoadingTimeout] = React.useState(false)
-  
-  React.useEffect(() => {
-    if (loading) {
-      const timer = setTimeout(() => {
-        setLoadingTimeout(true)
-      }, 3000) // 3 second timeout
-      return () => clearTimeout(timer)
-    } else {
-      setLoadingTimeout(false)
-    }
-  }, [loading])
-
-  // If loading timeout, treat as error (backend not responding)
-  if (loading && loadingTimeout) {
-    return (
-      <div className="max-w-md mx-auto py-16 text-center space-y-4">
-        <h2 className="text-xl font-semibold text-gray-100">Backend bağlantı hatası</h2>
-        <p className="text-sm text-gray-400">
-          Aurora backend'e bağlanılamıyor. Backend çalışıyor mu?
-        </p>
-        <Link
-          href="/onboarding"
-          className="inline-flex rounded-xl bg-purple-500 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-400 transition"
-        >
-          Onboarding'e Git
-        </Link>
-      </div>
-    )
-  }
 
   if (loading) {
     return (
