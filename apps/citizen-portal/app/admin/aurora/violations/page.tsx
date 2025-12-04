@@ -28,7 +28,7 @@ export default function AuroraViolationsPage() {
     refetch,
   } = useAdminViolations({
     auto: true,
-    pollIntervalMs: 15000,
+    pollIntervalMs: 30000, // 30 saniye - daha az database yükü
     initialFilters: { severityMin: 1, severityMax: 5 },
   });
 

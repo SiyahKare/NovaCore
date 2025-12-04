@@ -129,7 +129,11 @@ function DashboardInner() {
               <div>
                 <p className="text-xs text-gray-400 mb-1">NovaScore</p>
                 <p className="text-2xl font-bold text-purple-300">
-                  {citizenState.novaScore.nova_score.toFixed(0)}
+                  {(() => {
+                    const rawScore = (citizenState.novaScore as any).nova_score ?? (citizenState.novaScore as any).value ?? 0
+                    const normalizedScore = rawScore > 100 ? rawScore / 10 : rawScore
+                    return normalizedScore.toFixed(0)
+                  })()}
                 </p>
               </div>
             )}
@@ -158,11 +162,18 @@ function DashboardInner() {
           </h3>
           <div className="space-y-2">
             <Link
-              href="/consent"
+              href="/wallet"
+              className="block p-3 rounded-lg bg-slate-900/50 border border-slate-800 hover:border-emerald-500/50 transition-colors"
+            >
+              <div className="text-sm font-semibold text-slate-200">💰 Wallet</div>
+              <div className="text-xs text-gray-400">NCR bakiyeni görüntüle</div>
+            </Link>
+            <Link
+              href="/marketplace"
               className="block p-3 rounded-lg bg-slate-900/50 border border-slate-800 hover:border-purple-500/50 transition-colors"
             >
-              <div className="text-sm font-semibold text-slate-200">Recall</div>
-              <div className="text-xs text-gray-400">Veri geri çekme talebi</div>
+              <div className="text-sm font-semibold text-slate-200">🛒 Marketplace</div>
+              <div className="text-xs text-gray-400">Dijital ürünler satın al</div>
             </Link>
             <Link
               href="/justice"

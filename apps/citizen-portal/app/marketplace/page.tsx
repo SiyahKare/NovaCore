@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useAuroraAPI } from '@aurora/hooks'
 
 interface MarketplaceItem {
   id: number
@@ -16,6 +17,7 @@ interface MarketplaceItem {
 }
 
 export default function MarketplacePage() {
+  const { fetchAPI } = useAuroraAPI()
   const [items, setItems] = useState<MarketplaceItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -27,11 +29,14 @@ export default function MarketplacePage() {
   const loadItems = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/v1/marketplace/items?status=active&limit=20')
-      if (!response.ok) throw new Error('Failed to load items')
-      const data = await response.json()
+      setError(null)
+      const { data, error: apiError } = await fetchAPI<MarketplaceItem[]>('/marketplace/items?status=active&limit=20')
+      if (apiError) {
+        throw new Error(apiError.detail || 'Failed to load items')
+      }
       setItems(Array.isArray(data) ? data : [])
     } catch (err: any) {
+      console.error('Marketplace load error:', err)
       setError(err.message || 'Failed to load marketplace items')
     } finally {
       setLoading(false)
@@ -42,12 +47,11 @@ export default function MarketplacePage() {
     if (!confirm('Satın almak istediğinizden emin misiniz?')) return
 
     try {
-      const response = await fetch(`/api/v1/marketplace/items/${itemId}/purchase`, {
+      const { data, error: apiError } = await fetchAPI(`/marketplace/items/${itemId}/purchase`, {
         method: 'POST',
       })
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.detail || 'Purchase failed')
+      if (apiError) {
+        throw new Error(apiError.detail || 'Purchase failed')
       }
       alert('Satın alma başarılı!')
       loadItems()

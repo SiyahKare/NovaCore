@@ -106,14 +106,60 @@ export function useAdminViolations(opts?: {
     }
   }, [fetchData, opts?.auto]);
 
-  // Polling
+  // Polling - filters değiştiğinde yeniden başlat, ama fetchData'ya bağlı değil
+  // Page Visibility API ile sayfa görünür değilken polling'i durdur
   useEffect(() => {
     if (!opts?.pollIntervalMs) return;
-    const id = setInterval(() => {
-      fetchData({ offset: 0 });
-    }, opts.pollIntervalMs);
+    
+    // İlk fetch'i hemen yap
+    const doFetch = () => {
+      // Sayfa görünür değilse polling yapma
+      if (document.hidden) return;
+      
+      setLoading(true);
+      setError(null);
+      
+      const params: Record<string, any> = {
+        limit: limit,
+        offset: 0,
+      };
+      
+      if (filters.category) params.category = filters.category;
+      if (filters.severityMin !== undefined) params.severity_min = filters.severityMin;
+      if (filters.severityMax !== undefined) params.severity_max = filters.severityMax;
+      
+      const queryString = new URLSearchParams(
+        Object.entries(params).reduce((acc, [key, value]) => {
+          if (value !== undefined && value !== null) {
+            acc[key] = String(value);
+          }
+          return acc;
+        }, {} as Record<string, string>)
+      ).toString();
+      
+      const endpoint = `/admin/aurora/violations${queryString ? `?${queryString}` : ""}`;
+      
+      api.fetchAPI<ResponseShape>(endpoint).then(({ data: res, error: apiError }) => {
+        if (apiError) {
+          setError("VIOLATION_FETCH_FAILED");
+          return;
+        }
+        if (res) {
+          setData(res.items);
+          setTotal(res.total);
+          setLimit(res.limit);
+          setOffset(0);
+        }
+      }).catch(() => {
+        setError("VIOLATION_FETCH_FAILED");
+      }).finally(() => {
+        setLoading(false);
+      });
+    };
+    
+    const id = setInterval(doFetch, opts.pollIntervalMs);
     return () => clearInterval(id);
-  }, [fetchData, opts?.pollIntervalMs]);
+  }, [api, filters, limit, opts?.pollIntervalMs]); // fetchData'yı dependency'den çıkardık
 
   return {
     data,

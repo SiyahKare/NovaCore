@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuroraAPI } from '@aurora/hooks'
 
 interface CreatorAsset {
   id: number
@@ -13,6 +14,7 @@ interface CreatorAsset {
 }
 
 export default function AgencyPage() {
+  const { fetchAPI } = useAuroraAPI()
   const [assets, setAssets] = useState<CreatorAsset[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -29,6 +31,7 @@ export default function AgencyPage() {
   const loadAssets = async () => {
     try {
       setLoading(true)
+      setError(null)
       const params = new URLSearchParams({
         limit: '50',
         min_score: filters.min_score.toString(),
@@ -36,11 +39,17 @@ export default function AgencyPage() {
       })
       if (filters.media_type) params.append('media_type', filters.media_type)
 
-      const response = await fetch(`/api/v1/agency/assets/viral?${params}`)
-      if (!response.ok) throw new Error('Failed to load assets')
-      const data = await response.json()
+      const { data, error: apiError } = await fetchAPI<CreatorAsset[]>(`/agency/assets/viral?${params}`)
+      if (apiError) {
+        const errorMsg = apiError.detail || apiError.error || 'Failed to load assets'
+        if (apiError.error === 'NETWORK_ERROR') {
+          throw new Error(`Bağlantı hatası: Backend'e erişilemiyor. Backend çalışıyor mu? (${errorMsg})`)
+        }
+        throw new Error(errorMsg)
+      }
       setAssets(Array.isArray(data) ? data : [])
     } catch (err: any) {
+      console.error('Agency load error:', err)
       setError(err.message || 'Failed to load viral assets')
     } finally {
       setLoading(false)
@@ -53,12 +62,11 @@ export default function AgencyPage() {
     }
 
     try {
-      const response = await fetch(`/api/v1/agency/assets/${assetId}/use`, {
-        method: 'POST',
+      const { data, error: apiError } = await fetchAPI(`/agency/assets/${assetId}/use`, {
+        method: 'PATCH',
       })
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.detail || 'Failed to use asset')
+      if (apiError) {
+        throw new Error(apiError.detail || 'Failed to use asset')
       }
       alert('Asset kampanyada kullanıldı!')
       loadAssets()

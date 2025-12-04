@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { ProtectedView } from '@/components/ProtectedView'
+import { useAuroraAPI } from '@aurora/hooks'
 
 interface MarketplaceItem {
   id: number
@@ -20,6 +22,15 @@ interface CreatorSales {
 }
 
 export default function MyItemsPage() {
+  return (
+    <ProtectedView>
+      <MyItemsInner />
+    </ProtectedView>
+  )
+}
+
+function MyItemsInner() {
+  const { fetchAPI } = useAuroraAPI()
   const [items, setItems] = useState<MarketplaceItem[]>([])
   const [sales, setSales] = useState<CreatorSales | null>(null)
   const [loading, setLoading] = useState(true)
@@ -32,20 +43,27 @@ export default function MyItemsPage() {
   const loadData = async () => {
     try {
       setLoading(true)
+      setError(null)
       
       // Load items
-      const itemsResponse = await fetch('/api/v1/marketplace/my-items?limit=20')
-      if (!itemsResponse.ok) throw new Error('Failed to load items')
-      const itemsData = await itemsResponse.json()
+      const { data: itemsData, error: itemsError } = await fetchAPI<MarketplaceItem[]>('/marketplace/my-items?limit=20')
+      if (itemsError) {
+        const errorMsg = itemsError.detail || itemsError.error || 'Failed to load items'
+        // Handle network errors specifically
+        if (itemsError.error === 'NETWORK_ERROR') {
+          throw new Error(`Bağlantı hatası: Backend'e erişilemiyor. Backend çalışıyor mu? (${errorMsg})`)
+        }
+        throw new Error(errorMsg)
+      }
       setItems(Array.isArray(itemsData) ? itemsData : [])
 
       // Load sales
-      const salesResponse = await fetch('/api/v1/marketplace/my-sales')
-      if (salesResponse.ok) {
-        const salesData = await salesResponse.json()
+      const { data: salesData, error: salesError } = await fetchAPI<CreatorSales>('/marketplace/my-sales')
+      if (!salesError && salesData) {
         setSales(salesData)
       }
     } catch (err: any) {
+      console.error('My items load error:', err)
       setError(err.message || 'Failed to load data')
     } finally {
       setLoading(false)

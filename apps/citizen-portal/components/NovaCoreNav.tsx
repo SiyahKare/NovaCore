@@ -53,6 +53,13 @@ export function NovaCoreNav() {
                 Admin
               </Link>
             )}
+            <Link
+              href="/wallet"
+              className="rounded-lg border border-emerald-500/60 px-2 py-1 text-[10px] text-emerald-200 hover:bg-emerald-500/10 transition flex items-center gap-1"
+              title="Wallet"
+            >
+              💰 Wallet
+            </Link>
             <div className="text-right text-xs">
               <div className="text-gray-300 font-medium">
                 {citizen.display_name || `Citizen ${citizen.id}`}
