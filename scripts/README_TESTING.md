@@ -1,4 +1,4 @@
-# Aurora State Network - Testing Guide
+# NovaCore - Testing Guide
 
 ## Smoke Test Scripts
 

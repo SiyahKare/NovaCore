@@ -90,7 +90,7 @@ class TreasuryFlow(SQLModel, table=True):
     """
     Treasury akış logu - her ekonomik işlem burada.
     
-    Bu tablo → AuroraOS'te Treasury heatmap / kaynak breakdown'ı besler.
+    Bu tablo → NovaCore'da Treasury heatmap / kaynak breakdown'ı besler.
     """
     __tablename__ = "treasury_flows"
 

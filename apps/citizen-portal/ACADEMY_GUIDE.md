@@ -1,8 +1,8 @@
-# Aurora Academy v1 - Eğitim & Growth Motoru
+# NovaCore Academy v1 - Eğitim & Growth Motoru
 
 ## 🎓 Overview
 
-Aurora Academy, vatandaşların Aurora sistemini anlaması için interaktif eğitim platformu.
+NovaCore Academy, vatandaşların SiyahKare / Aurora Justice sistemini anlaması için interaktif eğitim platformu.
 
 ## 📚 Modüller
 

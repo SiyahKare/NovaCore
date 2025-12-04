@@ -11,6 +11,85 @@ interface TelegramStatus {
   telegram_display_name: string | null
 }
 
+interface TelegramAuthResult {
+  id: number
+  first_name: string
+  last_name?: string
+  username?: string
+  photo_url?: string
+  auth_date: number
+  hash: string
+}
+
+let telegramLoginScriptPromise: Promise<void> | null = null
+
+async function ensureTelegramLoginScript() {
+  if (typeof window === 'undefined') {
+    throw new Error('Telegram doğrulaması sadece tarayıcıda başlatılabilir.')
+  }
+
+  if ((window as any).Telegram?.Login) {
+    return
+  }
+
+  if (!telegramLoginScriptPromise) {
+    telegramLoginScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.id = 'telegram-login-script'
+      script.src = 'https://telegram.org/js/telegram-widget.js?22'
+      script.async = true
+      script.onload = () => resolve()
+      script.onerror = () => {
+        telegramLoginScriptPromise = null
+        reject(new Error('Telegram doğrulama betiği yüklenemedi.'))
+      }
+      document.body.appendChild(script)
+    })
+  }
+
+  await telegramLoginScriptPromise
+
+  if (!(window as any).Telegram?.Login) {
+    throw new Error('Telegram doğrulama betiği hazır değil. Yeniden deneyin.')
+  }
+}
+
+async function requestTelegramOAuth(): Promise<TelegramAuthResult> {
+  await ensureTelegramLoginScript()
+
+  const botIdStr = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID
+  if (!botIdStr) {
+    throw new Error('Telegram bot ID tanımlı değil (NEXT_PUBLIC_TELEGRAM_BOT_ID).')
+  }
+
+  const botId = Number(botIdStr)
+  if (!botId) {
+    throw new Error('Geçersiz Telegram bot ID.')
+  }
+
+  return await new Promise((resolve, reject) => {
+    const login = (window as any).Telegram?.Login
+    if (!login?.auth) {
+      reject(new Error('Telegram doğrulama arayüzü bulunamadı.'))
+      return
+    }
+
+    login.auth(
+      {
+        bot_id: botId,
+        request_access: 'write',
+      },
+      (response: TelegramAuthResult | { error?: string } | undefined) => {
+        if (!response || (response as any).error) {
+          reject(new Error('Telegram doğrulaması iptal edildi.'))
+        } else {
+          resolve(response as TelegramAuthResult)
+        }
+      },
+    )
+  })
+}
+
 export default function IdentityPage() {
   // Identity page should work even without auth (show basic info)
   return <IdentityInner />
@@ -53,7 +132,7 @@ function IdentityInner() {
         // Get Telegram user data
         const tgUser = tg.initDataUnsafe?.user
         if (!tgUser) {
-          throw new Error('Telegram user data not available. Please open this page from Telegram.')
+          throw new Error('Telegram kullanıcı verisi alınamadı. Lütfen bu sayfayı Telegram üzerinden aç.')
         }
 
         // Link Telegram account
@@ -62,7 +141,7 @@ function IdentityInner() {
         )
 
         if (apiError) {
-          throw new Error(apiError.detail || 'Failed to link Telegram account')
+          throw new Error(apiError.detail || 'Telegram hesabı bağlanamadı')
         }
 
         if (data) {
@@ -75,15 +154,33 @@ function IdentityInner() {
           }
         }
       } else {
-        // Fallback: Open Telegram bot
-        const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'nasipquest_bot'
-        const botUrl = `https://t.me/${botUsername}?start=link_${citizen?.id || 'web'}`
-        window.open(botUrl, '_blank')
-        
-        setError('Telegram WebApp bulunamadı. Telegram bot\'u açtık, oradan bağlantı kurabilirsin.')
+        // Fallback: Use Telegram OAuth widget on web
+        const authPayload = await requestTelegramOAuth()
+        const query = new URLSearchParams({
+          telegram_user_id: authPayload.id.toString(),
+          telegram_username: authPayload.username || '',
+          telegram_first_name: authPayload.first_name || '',
+          telegram_last_name: authPayload.last_name || '',
+        })
+
+        const { data, error: apiError } = await fetchAPI<{ id: number; telegram_id: number }>(
+          `/identity/telegram/link?${query.toString()}`,
+        )
+
+        if (apiError) {
+          throw new Error(apiError.detail || 'Telegram hesabı bağlanamadı')
+        }
+
+        if (data) {
+          await refetch()
+          const { data: statusData } = await fetchAPI<TelegramStatus>('/identity/telegram/status')
+          if (statusData) {
+            setTelegramStatus(statusData)
+          }
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect Telegram')
+      setError(err instanceof Error ? err.message : 'Telegram bağlantısı kurulamadı')
     } finally {
       setLinking(false)
     }
@@ -92,7 +189,7 @@ function IdentityInner() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-gray-400">Loading identity...</div>
+        <div className="text-gray-400">Kimlik verileri yükleniyor...</div>
       </div>
     )
   }
@@ -101,11 +198,11 @@ function IdentityInner() {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Your Identity</h1>
-          <p className="text-gray-400">Your digital citizenship profile</p>
+          <h1 className="text-3xl font-bold mb-2">Kimlik Merkezi</h1>
+          <p className="text-gray-400">SiyahKare vatandaş profiline buradan erişebilirsin.</p>
         </div>
         <div className="aurora-card">
-          <p className="text-gray-400">Please log in to view your identity information.</p>
+          <p className="text-gray-400">Kimlik bilgilerini görmek için lütfen giriş yap.</p>
         </div>
       </div>
     )
@@ -114,24 +211,24 @@ function IdentityInner() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Your Identity</h1>
-        <p className="text-gray-400">Your digital citizenship profile</p>
+        <h1 className="text-3xl font-bold mb-2">Kimlik Merkezi</h1>
+        <p className="text-gray-400">SiyahKare vatandaş profiline dair tüm bilgiler.</p>
       </div>
 
       <div className="aurora-card">
-        <h3 className="text-lg font-semibold text-slate-200 mb-4">Citizen Information</h3>
+        <h3 className="text-lg font-semibold text-slate-200 mb-4">Vatandaş Bilgileri</h3>
         <div className="space-y-3">
           <div>
-            <p className="text-sm text-slate-400 mb-1">Citizen ID</p>
+            <p className="text-sm text-slate-400 mb-1">Vatandaş ID</p>
             <p className="text-lg font-mono text-aurora-purple">{citizen.id}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-400 mb-1">Display Name</p>
-            <p className="text-lg text-slate-200">{citizen.display_name || 'Not set'}</p>
+            <p className="text-sm text-slate-400 mb-1">Görünen İsim</p>
+            <p className="text-lg text-slate-200">{citizen.display_name || 'Ayarlanmadı'}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-400 mb-1">Username</p>
-            <p className="text-lg text-slate-200">@{citizen.username || 'not-set'}</p>
+            <p className="text-sm text-slate-400 mb-1">Kullanıcı Adı</p>
+            <p className="text-lg text-slate-200">@{citizen.username || 'tanımlı-değil'}</p>
           </div>
           <div>
             <p className="text-sm text-slate-400 mb-1">Telegram ID</p>
@@ -139,7 +236,7 @@ function IdentityInner() {
               <p className={`text-sm ${citizen.telegram_id && citizen.telegram_id > 0 ? 'text-slate-300' : 'text-yellow-500'}`}>
                 {citizen.telegram_id && citizen.telegram_id > 0 
                   ? `${citizen.telegram_id}${telegramStatus?.is_linked ? ' ✅' : ''}`
-                  : 'Not connected (dummy)'}
+                  : 'Bağlı değil (dummy)'}
               </p>
               {(!citizen.telegram_id || citizen.telegram_id <= 0 || !telegramStatus?.is_linked) && (
                 <button
@@ -147,7 +244,7 @@ function IdentityInner() {
                   disabled={linking}
                   className="rounded-lg border border-purple-500/50 bg-purple-500/20 px-3 py-1.5 text-xs text-purple-200 hover:bg-purple-500/30 transition disabled:opacity-50"
                 >
-                  {linking ? 'Connecting...' : 'Connect Telegram'}
+                  {linking ? 'Bağlanıyor...' : 'Telegram Bağla'}
                 </button>
               )}
             </div>
@@ -158,7 +255,7 @@ function IdentityInner() {
             )}
           </div>
           <div>
-            <p className="text-sm text-slate-400 mb-1">Member Since</p>
+            <p className="text-sm text-slate-400 mb-1">Üyelik Tarihi</p>
             <p className="text-sm text-slate-300">
               {new Date(citizen.created_at).toLocaleDateString()}
             </p>
@@ -180,7 +277,7 @@ function IdentityInner() {
             Telegram hesabını bağlayarak bot üzerinden görevleri tamamlayabilir, event'lere katılabilir ve daha fazla özellik kullanabilirsin.
           </div>
           <div className="text-xs text-gray-400 space-y-1">
-            <p>• Telegram MiniApp'ten açıldıysan "Connect Telegram" butonuna tıkla</p>
+            <p>• Telegram MiniApp'ten açıldıysan "Telegram Bağla" butonuna tıkla</p>
             <p>• Web'den açıldıysan Telegram bot'u açılacak, oradan bağlantı kurabilirsin</p>
           </div>
         </div>

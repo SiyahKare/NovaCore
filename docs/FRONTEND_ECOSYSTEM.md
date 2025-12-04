@@ -1,8 +1,8 @@
-# Aurora Frontend Ecosystem
+# NovaCore Frontend Ecosystem
 
 ## 🏗️ Architecture Overview
 
-Aurora Frontend Ecosystem is built as a **monorepo** with shared libraries and multiple applications:
+NovaCore Frontend Ecosystem is built as a **monorepo** with shared libraries and multiple applications:
 
 ```
 NovaCore/
@@ -62,7 +62,7 @@ NovaCore/
 - Appeals & Requests
 - Constitution viewer
 - DAO Policy Explorer
-- Aurora Academy access
+- NovaCore Academy access
 
 **Tech Stack:**
 - Next.js 14 (App Router)
@@ -101,7 +101,7 @@ NovaCore/
 - Micro-consent
 - DAO feed
 
-### 4. Aurora Academy
+### 4. NovaCore Academy
 
 **Purpose:** Education & simulation
 

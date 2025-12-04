@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Aurora State Network - Demo Seed Script
+NovaCore - Demo Seed Script
 Creates 3 demo users with different profiles:
 - AUR-SIGMA: Clean citizen (CP 0, FULL consent, high NovaScore)
 - AUR-TROLLER: Problematic user (violations, PROBATION/RESTRICTED regime)

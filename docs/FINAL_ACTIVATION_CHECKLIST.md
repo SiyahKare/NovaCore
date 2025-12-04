@@ -1,6 +1,6 @@
-# Aurora State - Final Activation Checklist (v1.0)
+# NovaCore + Aurora Justice - Final Activation Checklist (v1.0)
 
-Bu checklist Aurora'yı **tam yetkilendirilmiş**, **DAO-controlled**, **enforced**, **simüle edilebilir**, **vatandaş-kabul edebilir** hale getirir.
+Bu checklist NovaCore + Aurora Justice'i **tam yetkilendirilmiş**, **DAO-controlled**, **enforced**, **simüle edilebilir**, **vatandaş-kabul edebilir** hale getirir.
 
 ## 🚀 Quick Start
 
@@ -368,5 +368,5 @@ After activation:
 
 ---
 
-**Aurora State Network = DAO-controlled, versioned, simulated, enforced digital state.** 🖤
+**SiyahKare Republic + NovaCore = DAO-controlled, versioned, simulated, enforced digital state.** 🖤
 

@@ -1,14 +1,25 @@
-# Aurora State Network - 3-Layer Architecture
+# SiyahKare Governance Stack · Aurora Justice Engine
 
 ## Overview
 
-Aurora State Network implements a **3-layer state architecture** that separates mutable policy from immutable constitution, ensuring both flexibility and protection of fundamental rights.
+SiyahKare Republic, DeltaNova ideolojisini NovaCore Kernel üzerinde çalıştırır. Bu belgedeki Aurora Justice Engine, NovaCore’un adalet ve governance modülünü anlatır; Aurora bir devlet değil, SiyahKare devletinin CP/Regime katmanıdır.
 
 ---
 
 ## 🧬 Layer Architecture
 
-### **Layer 1: Chain Law (Mutable Policy)**
+### **Layer 1: DeltaNova Ideology**
+
+**Purpose:** SiyahKare’nin değişmez felsefi prensipleri – Behavior is Currency, NovaCredit teorisi, token sınıfları.
+
+**Artifacts:**
+- Manifesto / Constitution text
+- NovaCredit theory notes
+- Token class taxonomy
+
+---
+
+### **Layer 2: Chain Law (Mutable Policy)**
 
 **Purpose:** DAO-controlled policy parameters that can evolve based on governance.
 
@@ -39,7 +50,7 @@ Aurora State Network implements a **3-layer state architecture** that separates 
 
 ---
 
-### **Layer 2: Constitution (Immutable Law)**
+### **Layer 3: Constitution (Immutable Law)**
 
 **Purpose:** Protect fundamental rights that cannot be changed, even by DAO.
 
@@ -52,7 +63,7 @@ Aurora State Network implements a **3-layer state architecture** that separates 
 - Data Ethics & Transparency Contract (Articles 1-4)
 - Right to Recall
 - Redline principles
-- "Aurora citizen owns their data" - fundamental principle
+- "SiyahKare citizen owns their data" - fundamental principle
 - User consent requirements
 
 **Protection:**
@@ -67,7 +78,7 @@ Aurora State Network implements a **3-layer state architecture** that separates 
 
 ---
 
-### **Layer 3: Execution Engine (Runtime)**
+### **Layer 4: Execution Engine (NovaCore Runtime)**
 
 **Purpose:** Execute policy and constitution in real-time.
 
@@ -266,12 +277,12 @@ cast call $CONSTITUTION_CONTRACT "verifyConstitution(string)" --rpc-url $RPC_URL
 
 ## 🎉 Conclusion
 
-Aurora State Network's 3-layer architecture provides:
+SiyahKare’nin NovaCore + Aurora mimarisi şunları sağlar:
 
-- **Flexibility:** Policy can evolve through DAO
-- **Protection:** Constitution protects fundamental rights
-- **Transparency:** All changes on-chain and verifiable
-- **Accountability:** Full audit trail of policy changes
+- **Flexibility:** DAO Chain Law katmanında politika evrilebilir
+- **Protection:** DeltaNova ideolojisi ve Constitution katmanı temel hakları korur
+- **Transparency:** Tüm değişiklikler on-chain, denetlenebilir
+- **Accountability:** NovaCore tarafında tam audit trail tutulur
 
-**Aurora = DAO-controlled, constitution-protected, execution-enforced digital state.** 🖤
+**Aurora Justice Engine = DAO-controlled, constitution-protected, execution-enforced adalet katmanı.** 🖤
 

@@ -1,8 +1,8 @@
-# Aurora Auth & Identity Guide
+# NovaCore Auth & Identity Guide
 
 ## 🔐 Overview
 
-Aurora Citizen Portal now has full authentication and identity management.
+NovaCore Citizen Portal now has full authentication and identity management.
 
 ## Backend Endpoints
 

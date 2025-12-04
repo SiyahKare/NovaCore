@@ -1,4 +1,4 @@
-# Aurora State Activation Scripts
+# NovaCore / Aurora Justice Activation Scripts
 
 ## Quick Reference
 

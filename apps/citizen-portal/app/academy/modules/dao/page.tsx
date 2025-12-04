@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import {  } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { PolicyBreakdown } from '@aurora/ui'
 import type { PolicyParams } from '@aurora/ui'
@@ -39,7 +40,7 @@ export default function DAOModulePage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="text-xs uppercase tracking-[0.2em] text-purple-300">
-            Aurora Academy · Advanced Module
+            NovaCore Academy · Advanced Module
           </div>
           <h1 className="text-2xl md:text-3xl font-semibold mt-1">DAO & Policy Governance</h1>
         </div>
@@ -47,7 +48,7 @@ export default function DAOModulePage() {
 
       <section className="space-y-3 text-sm text-gray-300">
         <p>
-          Aurora'nın ceza politikası <strong>DAO (Decentralized Autonomous Organization)</strong>{' '}
+          Aurora Justice Engine'in ceza politikası <strong>DAO (Decentralized Autonomous Organization)</strong>{' '}
           tarafından kontrol edilir. Policy parametreleri (decay, CP ağırlıkları, regime
           threshold'ları) zincirde saklanır ve oylama ile değiştirilebilir.
         </p>
@@ -72,7 +73,7 @@ export default function DAOModulePage() {
             <strong>Simulation:</strong> Değişikliğin etkisi simüle edilir (simulate_aurora_policies.py)
           </li>
           <li>
-            <strong>Vote:</strong> AuroraDAO token sahipleri oy verir
+            <strong>Vote:</strong> Aurora Justice DAO token sahipleri oy verir
           </li>
           <li>
             <strong>Execution:</strong> Proposal geçerse, zincire yazılır (AuroraPolicyConfig.sol)

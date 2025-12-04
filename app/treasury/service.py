@@ -321,7 +321,7 @@ class TreasuryService:
 
     # ============ Treasury Summary ============
     async def get_summary(self) -> TreasurySummary:
-        """Get treasury summary for AuroraOS dashboard."""
+        """Get treasury summary for NovaCore dashboard."""
         # Total treasury (tüm pool'ların toplamı)
         growth_balance = await self.get_system_account_balance(
             SystemAccountType.POOL_GROWTH

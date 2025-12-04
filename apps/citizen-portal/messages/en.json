@@ -61,6 +61,36 @@
     "emailAuth": "Sign in with Email",
     "googleAuth": "Sign in with Google",
     "devMode": "Developer Mode"
+  },
+  "home": {
+    "badge": "SiyahKare Republic · NovaCore Justice Engine",
+    "title": "Welcome to your digital state,",
+    "titleHighlight": "Citizen.",
+    "description": "SiyahKare Republic runs on the DeltaNova ideology, NovaCore kernel and Aurora Justice Engine. Data sovereignty is yours, law is on-chain, enforcement is transparent.",
+    "becomeCitizen": "Become a Citizen",
+    "openDashboard": "Open Dashboard",
+    "daoControlled": "DAO-Controlled Policy",
+    "daoControlledSub": "AuroraPolicyConfig.sol",
+    "justiceEngine": "Justice Engine v2",
+    "justiceEngineSub": "CP · Regime · Enforcement",
+    "constitution": "Constitution-Protected",
+    "constitutionSub": "AuroraConstitution.sol",
+    "snapshot": "Aurora Snapshot",
+    "simulated": "Simulated",
+    "regime": "Regime",
+    "citizenInGoodStanding": "Citizen in good standing",
+    "latestPolicyChange": "Latest policy change",
+    "onChain": "on-chain",
+    "howItWorks": "How NovaCore + Aurora works?",
+    "step1Title": "1 · Consent & Data Sovereignty",
+    "step1Description": "When entering SiyahKare, you first approve the Data Ethics Agreement. Redline data is under extra protection, your recall right is always open.",
+    "step2Title": "2 · NovaScore & Regime",
+    "step2Description": "Your behaviors, contributions, and violations transform into scores via NovaScore and CP/Regime. The system classifies you transparently: NORMAL → SOFT_FLAG → PROBATION → RESTRICTED → LOCKDOWN.",
+    "step3Title": "3 · DAO-Governed Policy",
+    "step3Description": "Penalty weights, decay rates, and enforcement rules are voted by the Aurora Justice DAO. Policy changes are written to the chain, the backend only enforces.",
+    "ctaTitle": "Ready? Let's become a citizen.",
+    "ctaDescription": "Become a SiyahKare citizen with 3-step onboarding, generate your NovaScore, see your regime, learn your rights.",
+    "startOnboarding": "Start Onboarding"
   }
 }
 

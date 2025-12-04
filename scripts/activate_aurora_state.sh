@@ -1,7 +1,7 @@
 #!/bin/bash
-# Aurora State - Final Activation Script
+# NovaCore + Aurora Justice - Final Activation Script
 # Complete activation checklist automation
-# This script activates Aurora as a fully operational DAO-controlled digital state
+# This script activates NovaCore as a fully operational DAO-controlled digital state
 
 set -e
 
@@ -22,7 +22,7 @@ SKIP_DAO_SYNC="${SKIP_DAO_SYNC:-false}"
 
 echo -e "${PURPLE}"
 echo "╔════════════════════════════════════════════════════════════╗"
-echo "║     AURORA STATE - FINAL ACTIVATION CHECKLIST (v1.0)     ║"
+echo "║   NOVACORE + AURORA JUSTICE - ACTIVATION CHECKLIST (v1.0)  ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 echo ""
@@ -436,7 +436,7 @@ main() {
   echo -e "  3. Build Citizen Portal: ${YELLOW}cd apps/citizen-portal && npm run dev${NC}"
   echo -e "  4. View docs: ${YELLOW}docs/DAO_ACTIVATION_CHECKLIST.md${NC}"
   echo ""
-  echo -e "${PURPLE}Aurora State Network = DAO-controlled, versioned, simulated, enforced digital state.${NC}"
+  echo -e "${PURPLE}SiyahKare Republic + NovaCore = DAO-controlled, versioned, simulated, enforced digital state.${NC}"
   echo ""
 }
 

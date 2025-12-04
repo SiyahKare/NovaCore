@@ -2,7 +2,7 @@
 
 ## Overview
 
-Aurora Citizen Portal supports both Telegram Mini-App users and regular web users. Since the current system is built around Telegram IDs, web users get synthetic Telegram IDs.
+NovaCore Citizen Portal supports both Telegram Mini-App users and regular web users. Since the current system is built around Telegram IDs, web users get synthetic Telegram IDs.
 
 ## How It Works
 

@@ -20,7 +20,7 @@ export default function AuroraAdminOverviewPage() {
     <div className="space-y-8">
       {/* Quick stats */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-gray-100">Aurora State Snapshot</h2>
+        <h2 className="text-sm font-semibold text-gray-100">Aurora Justice Snapshot</h2>
         <p className="text-xs text-gray-400">
           Consent, violations, CP ve regime dağılımı. Bu panel{' '}
           <span className="text-purple-300">/admin/aurora/stats</span> sayfasının condensed
@@ -36,7 +36,7 @@ export default function AuroraAdminOverviewPage() {
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-gray-100">Quick Case Lookup</h2>
         <p className="text-xs text-gray-400">
-          Herhangi bir Aurora citizen için komple case file aç. Ombudsman flow'unun giriş noktası.
+          Herhangi bir SiyahKare citizen için komple case file aç. Ombudsman flow'unun giriş noktası.
         </p>
 
         <form

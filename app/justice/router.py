@@ -17,9 +17,11 @@ from .schemas import (
     CpStateResponse,
     CaseFileResponse,
     PolicyParamsResponse,
+    AppealCreate,
+    AppealResponse,
 )
 
-from .models import ViolationLog, UserCpState
+from .models import ViolationLog, UserCpState, TaskAppeal
 
 from .policy import regime_for_cp
 
@@ -46,6 +48,14 @@ class JusticeService:
         self.session = session
         self._policy_service = PolicyService(session)
         self._cached_policy = None
+
+    async def _get_policy(self, force_refresh: bool = False):
+        """
+        Load current Justice policy (DAO parameters) with simple caching.
+        """
+        if force_refresh or self._cached_policy is None:
+            self._cached_policy = await self._policy_service.get_active_policy()
+        return self._cached_policy
 
 
 
@@ -198,11 +208,25 @@ class JusticeService:
 
         # cp güncelle
         policy = await self._get_policy()
+        old_cp = state.cp_value
+        old_regime = state.regime
         state.cp_value = state.cp_value + cp_delta
         state.regime = regime_for_cp(state.cp_value, policy)
         state.last_updated_at = datetime.utcnow()
 
         self.session.add(state)
+        
+        # Justice Execution Engine: CP değişikliğini tetikle
+        if old_cp != state.cp_value or old_regime != state.regime:
+            from .execution_engine import JusticeExecutionEngine
+            execution_engine = JusticeExecutionEngine(self.session)
+            await execution_engine.on_cp_changed(
+                user_id=body.user_id,
+                old_cp=old_cp,
+                new_cp=state.cp_value,
+                old_regime=old_regime,
+                new_regime=state.regime,
+            )
 
 
 
@@ -648,5 +672,132 @@ async def get_case_file(
 
         recent_violations=violations,
 
+    )
+
+
+@router.post(
+    "/appeals",
+    response_model=AppealResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Task submission için itiraz et",
+    description="Reddedilen görev için itiraz et. Appeal fee (5 NCR) ödenir ve görev Ethics Appeal Queue'ya alınır.",
+)
+async def create_appeal(
+    body: AppealCreate,
+    current_user_id: str = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> AppealResponse:
+    """
+    Task submission için itiraz et.
+    
+    Kullanıcı reddedilen bir görev için itiraz edebilir.
+    Appeal fee (5 NCR) ödenir ve görev Ethics Appeal Queue'ya alınır.
+    """
+    from app.telegram_gateway.task_models import TaskSubmission, SubmissionStatus
+    from app.wallet.service import WalletService
+    from app.identity.models import User
+    
+    # Get submission
+    submission_query = select(TaskSubmission).where(TaskSubmission.id == body.submission_id)
+    submission_result = await session.execute(submission_query)
+    submission = submission_result.scalar_one_or_none()
+    
+    if not submission:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task submission not found",
+        )
+    
+    # Verify user owns the submission
+    user_id_int = int(current_user_id)
+    if submission.user_id != user_id_int:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only appeal your own submissions",
+        )
+    
+    # Check if submission is rejected
+    if submission.status != SubmissionStatus.REJECTED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can only appeal rejected submissions",
+        )
+    
+    # Check if appeal already exists
+    existing_appeal_query = select(TaskAppeal).where(
+        TaskAppeal.submission_id == body.submission_id
+    )
+    existing_appeal_result = await session.execute(existing_appeal_query)
+    existing_appeal = existing_appeal_result.scalar_one_or_none()
+    
+    if existing_appeal:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Appeal already exists for this submission",
+        )
+    
+    # Charge appeal fee (5 NCR)
+    wallet_service = WalletService(session)
+    appeal_fee = 5.0
+    
+    try:
+        wallet_tx = await wallet_service.debit(
+            user_id=user_id_int,
+            amount=appeal_fee,
+            source="appeal_fee",
+            metadata={"submission_id": body.submission_id},
+        )
+        appeal_fee_paid = True
+    except Exception as e:
+        # Insufficient balance or other error
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Appeal fee payment failed: {str(e)}",
+        )
+    
+    # Create appeal
+    appeal = TaskAppeal(
+        submission_id=body.submission_id,
+        user_id=current_user_id,
+        reason=body.reason,
+        status="pending",
+        appeal_fee_paid=appeal_fee_paid,
+        appeal_fee_tx_id=wallet_tx.id if wallet_tx else None,
+    )
+    
+    session.add(appeal)
+    
+    # Update submission status to pending (move to Ethics Appeal Queue)
+    submission.status = SubmissionStatus.PENDING
+    session.add(submission)
+    
+    await session.commit()
+    await session.refresh(appeal)
+    
+    # Track telemetry event
+    from app.telemetry.models import TelemetryEvent
+    telemetry_event = TelemetryEvent(
+        user_id=user_id_int,
+        event="appeal_submitted",
+        payload={
+            "submission_id": body.submission_id,
+            "appeal_id": appeal.id,
+        },
+        source="nasipquest",
+    )
+    session.add(telemetry_event)
+    await session.commit()
+    
+    return AppealResponse(
+        id=appeal.id or 0,
+        submission_id=appeal.submission_id,
+        user_id=appeal.user_id,
+        reason=appeal.reason,
+        status=appeal.status,
+        appeal_fee_paid=appeal.appeal_fee_paid,
+        created_at=appeal.created_at,
+        reviewed_at=appeal.reviewed_at,
+        reviewed_by=appeal.reviewed_by,
+        review_notes=appeal.review_notes,
     )
 

@@ -61,6 +61,36 @@
     "emailAuth": "E-posta ile Giriş",
     "googleAuth": "Google ile Giriş",
     "devMode": "Geliştirici Modu"
+  },
+  "home": {
+    "badge": "SiyahKare Cumhuriyeti · NovaCore Justice Engine",
+    "title": "Dijital devletine hoş geldin,",
+    "titleHighlight": "Vatandaş.",
+    "description": "SiyahKare Cumhuriyeti; DeltaNova ideolojisi, NovaCore çekirdeği ve Aurora Justice Engine ile çalışır. Veri egemenliği sende, hukuk zincirde, enforcement şeffaf.",
+    "becomeCitizen": "Become a Citizen",
+    "openDashboard": "Open Dashboard",
+    "daoControlled": "DAO-Controlled Policy",
+    "daoControlledSub": "AuroraPolicyConfig.sol",
+    "justiceEngine": "Justice Engine v2",
+    "justiceEngineSub": "CP · Regime · Enforcement",
+    "constitution": "Constitution-Protected",
+    "constitutionSub": "AuroraConstitution.sol",
+    "snapshot": "Aurora Snapshot",
+    "simulated": "Simulated",
+    "regime": "Regime",
+    "citizenInGoodStanding": "Citizen in good standing",
+    "latestPolicyChange": "Latest policy change",
+    "onChain": "on-chain",
+    "howItWorks": "NovaCore + Aurora nasıl çalışıyor?",
+    "step1Title": "1 · Consent & Veri Egemenliği",
+    "step1Description": "SiyahKare'ye girerken önce Veri Etiği Sözleşmesi'ni interaktif olarak onaylarsın. Kırmızı Hat verilerin ekstra koruma altında, recall hakkın her zaman açık.",
+    "step2Title": "2 · NovaScore & Regime",
+    "step2Description": "Davranışların, katkıların ve ihlallerin NovaScore ve CP/Regime ile skora dönüşür. Sistem, seni şeffaf şekilde sınıflandırır: NORMAL → SOFT_FLAG → PROBATION → RESTRICTED → LOCKDOWN.",
+    "step3Title": "3 · DAO-Governed Policy",
+    "step3Description": "Ceza ağırlıkları, decay oranları ve enforcement kuralları Aurora Justice DAO tarafından oylanır. Policy değişiklikleri zincire yazar, backend sadece uygular.",
+    "ctaTitle": "Hazırsan, vatandaşlığa geçelim.",
+    "ctaDescription": "3 adımlı onboarding ile SiyahKare vatandaşı ol, NovaScore'unu üret, rejimini gör, haklarını öğren.",
+    "startOnboarding": "Start Onboarding"
   }
 }
 

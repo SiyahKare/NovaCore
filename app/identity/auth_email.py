@@ -1,5 +1,5 @@
 """
-Email-based Authentication for Aurora
+Email-based Authentication for NovaCore
 """
 from datetime import datetime
 from typing import Optional

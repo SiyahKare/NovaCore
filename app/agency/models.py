@@ -4,7 +4,9 @@ NovaCore Agency Models - NovaAgency, Performers
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import Column
+from typing import Optional
+
+from sqlalchemy import Column, Enum as SQLEnum, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
@@ -155,4 +157,123 @@ class Performer(SQLModel, table=True):
                 "share_treasury": 20,
             }
         }
+
+
+class CreatorAssetStatus(str, Enum):
+    """CreatorAsset durumu."""
+    DRAFT = "DRAFT"  # oluştu ama daha review edilmedi
+    CURATED = "CURATED"  # sistem tarafından "ajanslık" diye işaretlendi
+    APPROVED = "APPROVED"  # human/operatör onayı
+    USED_IN_CAMPAIGN = "USED_IN_CAMPAIGN"
+
+
+class AssetMediaType(str, Enum):
+    """Asset medya tipi."""
+    IMAGE = "IMAGE"
+    VIDEO = "VIDEO"
+    TEXT = "TEXT"
+    MIXED = "MIXED"
+
+
+class PipelineStage(str, Enum):
+    """Agency client pipeline stage."""
+    LEAD = "LEAD"
+    CONTACTED = "CONTACTED"
+    DEMO_DONE = "DEMO_DONE"
+    NEGOTIATION = "NEGOTIATION"
+    WON = "WON"
+    LOST = "LOST"
+
+
+class AgencyClient(SQLModel, table=True):
+    """
+    Ajans müşterisi (KOBİ veya marka).
+    """
+    __tablename__ = "agency_clients"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True, max_length=255)
+    contact_person: Optional[str] = Field(default=None, max_length=255)
+    contact_phone: Optional[str] = Field(default=None, max_length=50)
+    contact_email: Optional[str] = Field(default=None, max_length=255)
+
+    pipeline_stage: PipelineStage = Field(
+        default=PipelineStage.LEAD,
+        sa_column=Column(SQLEnum(PipelineStage, name="pipeline_stage_enum")),
+    )
+
+    monthly_mrr_try: float = Field(default=0.0, description="Aktif abonelik varsa")
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class CreatorAsset(SQLModel, table=True):
+    """
+    NasipQuest görevlerinden süzülen, ajansın kullanacağı "viral potansiyelli" içerik.
+
+    Bu varlık:
+    - Bir kullanıcıya ait
+    - Bir task_submission kaynağına bağlı
+    - Ajans tarafında paketlere/dosyalara dönüşür
+    """
+    __tablename__ = "creator_assets"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    user_id: int = Field(index=True, foreign_key="users.id", description="NasipQuest user")
+    task_id: str = Field(index=True, max_length=100, description="Görevin ID'si")
+    submission_id: int = Field(index=True, foreign_key="telegram_task_submissions.id", description="TaskSubmission ID'si")
+
+    media_type: AssetMediaType = Field(
+        default=AssetMediaType.IMAGE,
+        sa_column=Column(SQLEnum(AssetMediaType, name="asset_media_type_enum")),
+    )
+    media_url: str = Field(max_length=1000, description="S3 / CDN / Telegram file URL")
+    caption: Optional[str] = Field(default=None, max_length=2000, description="Aurora optimize caption")
+    hook_script: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        description="İlk 3–5 saniyelik hook metni"
+    )
+    platform_hint: Optional[str] = Field(
+        default=None,
+        max_length=50,
+        description="tiktok / reels / shorts / youtube / story vb."
+    )
+
+    # AI / Scoring snapshot
+    ai_total_score: float = Field(index=True, description="AI total score (0-100)")
+    ai_creativity_score: float = Field(default=0.0, description="AI creativity score")
+    ai_aesthetic_score: float = Field(default=0.0, description="AI aesthetic score")
+    ai_algo_fit_score: float = Field(default=0.0, description="AI algorithm fit score")
+
+    siyah_score_snapshot: float = Field(default=0.0, description="O anki SiyahScore")
+    risk_score_snapshot: float = Field(default=0.0, description="O anki RiskScore")
+
+    tags: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        description="virality, meme, boss_whatsapp, hook, loop, glitch vb. comma-separated"
+    )
+
+    status: CreatorAssetStatus = Field(
+        default=CreatorAssetStatus.CURATED,
+        sa_column=Column(SQLEnum(CreatorAssetStatus, name="creator_asset_status_enum")),
+    )
+
+    is_featured: bool = Field(default=False, index=True)
+    used_in_campaign: bool = Field(default=False, index=True)
+
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # İleri seviye: client_id, campaign_id vs. eklenebilir
+    agency_client_id: Optional[int] = Field(default=None, foreign_key="agency_clients.id")
+
+    __table_args__ = (
+        Index('ix_creator_assets_user_status', 'user_id', 'status'),
+        Index('ix_creator_assets_ai_score', 'ai_total_score'),
+        Index('ix_creator_assets_status', 'status'),
+    )
 

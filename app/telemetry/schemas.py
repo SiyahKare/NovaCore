@@ -1,6 +1,6 @@
 # app/telemetry/schemas.py
 """
-Aurora Telemetry Schemas - Growth & Education Event Tracking
+NovaCore Telemetry Schemas - Growth & Education Event Tracking
 """
 from datetime import datetime
 from typing import Optional, Dict, Any

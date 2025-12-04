@@ -434,7 +434,7 @@ function ConsentInner() {
                         ⏳ Recall talebi işleniyor...
                       </div>
                       <div className="text-xs text-gray-400">
-                        Talebiniz alındı. Aurora, recall talebinizi 48 saat içinde işlemekle yükümlüdür.
+                        Talebiniz alındı. SiyahKare NovaCore ekibi recall talebinizi 48 saat içinde işlemekle yükümlüdür.
                         İşlem sırasında:
                       </div>
                       <ul className="text-xs text-gray-400 list-disc list-inside space-y-1 ml-2">

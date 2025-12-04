@@ -1,6 +1,6 @@
 # app/telemetry/router.py
 """
-Aurora Telemetry Router - Growth & Education Event Tracking
+NovaCore Telemetry Router - Growth & Education Event Tracking
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession

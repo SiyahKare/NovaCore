@@ -26,12 +26,12 @@ export default function AboutPage() {
       {/* HERO */}
       <section className="grid gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)] items-start">
         <div className="space-y-5">
-          <Pill>Aurora State Network</Pill>
+          <Pill>SiyahKare · NovaCore Kernel</Pill>
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
             Protocol-State for <span className="text-purple-300">Digital Citizens</span>
           </h1>
           <p className="text-sm md:text-base text-gray-300 leading-relaxed">
-            AuroraOS, klasik "app" değildir.{" "}
+            NovaCore, klasik "app" değildir.{" "}
             <span className="text-gray-100 font-medium"> Üç katmanlı bir dijital devlet motoru</span>
             dur: veri egemenliği, adalet motoru ve DAO tabanlı politika yönetimi.
           </p>
@@ -82,7 +82,7 @@ export default function AboutPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[11px] uppercase tracking-[0.18em] text-gray-400">
-                Senin Aurora Durumun
+                Senin Aurora Justice Durumun
               </p>
               <p className="text-xs text-gray-500">
                 Bu sayfa gerçek verinle çalışır (login isen).
@@ -121,7 +121,7 @@ export default function AboutPage() {
       {/* HOW IT WORKS */}
       <section className="space-y-4">
         <h2 className="text-lg md:text-xl font-semibold text-white">
-          How Aurora Works — Vatandaş Flow'u
+          Nasıl Çalışır — NovaCore & Aurora Flow'u
         </h2>
         <div className="grid gap-4 md:grid-cols-4">
           <StepCard

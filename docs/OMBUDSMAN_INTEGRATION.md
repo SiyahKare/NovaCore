@@ -1,8 +1,44 @@
+## 🏛️ Ombudsman Nedir ve Modülün Fonksiyonu
+
+Bu döküman bağlamında **Ombudsman** (veya **Operator**), SiyahKare Cumhuriyeti / NovaCore ekosistemindeki kullanıcı durumlarını inceleyip Aurora Justice Engine üzerinde karar veren operatörlerdir. Ombudsman'ın temel görevi, bir kullanıcının kısıtlanma nedenlerini araştırmak, kullanıcı itirazlarını (**Appeal Review**) incelemek ve genel kullanıcı yönetimini sağlamaktır.
+
+---
+
+### 🔎 Ombudsman Modülünün Fonksiyonu
+
+Ombudsman'a hizmet eden temel modül, **Aurora Case File** (Aurora Vaka Dosyası) endpoint'idir. Bu modülün ana fonksiyonu, bir kullanıcının NovaCore/Aurora içerisindeki tüm kritik durum verilerini tek bir bütünleşik JSON yanıtında sunmaktır. 
+
+Bu fonksiyon, `GET /justice/case/{user_id}` endpoint'i üzerinden sağlanır.
+
+#### 📦 Sunulan Veriler (Case File İçeriği)
+
+Bu endpoint, Ombudsman'a kullanıcı hakkında karar vermesi için gerekli olan 4 ana veri katmanını sağlar:
+
+1.  **`privacy_profile` (Gizlilik Profili):**
+    * Kullanıcının verdiği en son **rıza seviyesi** (`FULL`, `PARTIAL` vb.).
+    * Kullanıcının veri işleme politikalarına dair izinleri (`economy`, `behavioral` vb.).
+    * Veri **Recall** (Geri Çekme) talebinin durumu.
+
+2.  **`cp_state` (Ceza Puanı Durumu):**
+    * Kullanıcının anlık **Ceza Puanı** (`cp_value`).
+    * Bu puana bağlı olarak uygulanan mevcut **Rejim** (`PROBATION`, `LOCKDOWN` vb.).
+
+3.  **`nova_score` (Davranışsal İtibar Puanı):**
+    * Kullanıcının genel **NovaScore** değeri.
+    * Bu puanı oluşturan bileşenlerin (ECO, REL, SOC, ID, CON) değerleri ve güvenilirlikleri.
+
+4.  **`recent_violations` (Son İhlaller):**
+    * Kullanıcının aldığı son ihlallerin listesi (kategori, şiddet, Ceza Puanı artışı gibi detaylarla).
+
+#### 🛡️ Yetkilendirme
+
+Bu endpoint'in hassasiyeti nedeniyle, erişimin **admin/ombudsman rolleriyle kısıtlanması** gerekmektedir (Bu kontrol şu an `TODO` olarak listelenmiştir).
+
 # Ombudsman / Operator Console Integration
 
 ## Overview
 
-The Aurora Case File endpoint provides a complete view of a user's status in the Aurora State Network. This is designed for operator consoles, admin panels, and ombudsman interfaces.
+The Aurora Case File endpoint provides a complete view of a user's status inside NovaCore (powered by Aurora Justice). This is designed for operator consoles, admin panels, and ombudsman interfaces.
 
 ## Endpoint
 

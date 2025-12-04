@@ -139,6 +139,47 @@ class EventService:
         
         return total_xp, total_ncr
     
+    async def compute_final_rewards(
+        self,
+        user_id: int,
+        task_id: str,
+        base_xp: int,
+        base_ncr: Decimal,
+        risk_score: float,
+    ) -> tuple[int, Decimal, float]:
+        """
+        Final reward hesaplama (Event bonuses + RiskScore multiplier).
+        
+        Single source of truth for reward calculation.
+        
+        Args:
+            user_id: Kullanıcı ID
+            task_id: Görev ID
+            base_xp: Base XP reward
+            base_ncr: Base NCR reward
+            risk_score: Kullanıcının RiskScore'u (0-10)
+        
+        Returns:
+            (final_xp, final_ncr, risk_multiplier)
+        """
+        # 1. Apply event bonuses
+        total_xp, total_ncr = await self.apply_event_bonuses(
+            user_id=user_id,
+            task_id=task_id,
+            base_xp=base_xp,
+            base_ncr=base_ncr,
+        )
+        
+        # 2. Apply RiskScore multiplier
+        from app.abuse.service import AbuseGuard
+        # AbuseGuard.reward_multiplier is static, no need to instantiate
+        risk_multiplier = AbuseGuard.reward_multiplier(risk_score)
+        
+        final_xp = max(0, int(total_xp * risk_multiplier))
+        final_ncr = Decimal(str(float(total_ncr) * risk_multiplier))
+        
+        return final_xp, final_ncr, risk_multiplier
+    
     async def update_event_participation(
         self,
         event_id: int,

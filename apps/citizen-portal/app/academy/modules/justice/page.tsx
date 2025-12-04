@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import {  } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { RegimeBadge } from '@aurora/ui'
 import { useAuroraEvents } from '@aurora/hooks'
@@ -34,7 +35,7 @@ export default function JusticeModulePage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="text-xs uppercase tracking-[0.2em] text-purple-300">
-            Aurora Academy · Advanced Module
+            NovaCore Academy · Advanced Module
           </div>
           <h1 className="text-2xl md:text-3xl font-semibold mt-1">Justice Engine & Regime</h1>
         </div>
@@ -48,7 +49,7 @@ export default function JusticeModulePage() {
 
       <section className="space-y-3 text-sm text-gray-300">
         <p>
-          <strong>Justice Engine</strong>, Aurora'nın ceza ve enforcement sistemidir. Her
+          <strong>Justice Engine</strong>, Aurora Justice modülünün ceza ve enforcement sistemidir. Her
           ihlal bir <strong>ViolationLog</strong> kaydı oluşturur ve <strong>CP (Ceza Puanı)</strong>{' '}
           artırır.
         </p>

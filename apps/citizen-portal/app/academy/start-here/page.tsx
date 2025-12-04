@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from 'next/link'
+import {  } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   NovaScoreCard,
   RegimeBadge,
@@ -50,13 +51,13 @@ function StartHereInner() {
       {/* Header */}
       <header className="space-y-3 text-center">
         <div className="text-xs uppercase tracking-[0.2em] text-purple-300">
-          Aurora Academy · Start Here
+          NovaCore Academy · Start Here
         </div>
         <h1 className="text-3xl md:text-4xl font-semibold">
-          7 Dakikada Aurora Vatandaşlığı
+          7 Dakikada SiyahKare / NovaCore
         </h1>
         <p className="text-sm text-gray-400 max-w-2xl mx-auto">
-          Bu track, Aurora'nın temel kavramlarını hızlıca kavraman için tasarlandı.
+          Bu track, SiyahKare + NovaCore + Aurora Justice kavramlarını hızlıca kavraman için tasarlandı.
           Her adımda bir parça öğrenecek, sonunda tüm sistemi anlayacaksın.
         </p>
       </header>
@@ -83,7 +84,7 @@ function StartHereInner() {
 
       {/* Step Content */}
       <div className="rounded-2xl border border-white/10 bg-black/50 p-6 md:p-8 space-y-6">
-        {step === 1 && <Step1WhatIsAurora onNext={next} />}
+        {step === 1 && <Step1WhatIsNovaCore onNext={next} />}
         {step === 2 && <Step2ScoringAndJustice onBack={back} onNext={next} />}
         {step === 3 && (
           <Step3PolicyAndDAO onBack={back} onFinish={() => router.push("/academy")} />
@@ -124,15 +125,15 @@ function StartHereInner() {
 
 /* --- Step 1: Bu Ne? --- */
 
-function Step1WhatIsAurora({ onNext }: { onNext: () => void }) {
+function Step1WhatIsNovaCore({ onNext }: { onNext: () => void }) {
   return (
     <>
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-white">
-          Aurora Nedir?
+          NovaCore & Aurora Justice Nedir?
         </h2>
         <p className="text-sm text-gray-300 leading-relaxed">
-          Aurora, klasik bir "uygulama" değildir. <strong>Üç katmanlı bir dijital devlet motoru</strong>dur:
+          NovaCore, klasik bir "uygulama" değildir. <strong>SiyahKare Cumhuriyeti için üç katmanlı bir dijital devlet motorudur</strong> ve Aurora Justice Engine bu motorun adalet katmanıdır:
         </p>
 
         <div className="grid md:grid-cols-3 gap-4 mt-6">
@@ -173,7 +174,7 @@ function Step1WhatIsAurora({ onNext }: { onNext: () => void }) {
 
         <div className="mt-6 p-4 rounded-xl border border-purple-500/30 bg-purple-950/20">
           <p className="text-xs text-purple-200">
-            <strong>Önemli:</strong> Aurora'da hiçbir şey "gizli" değildir. Her ceza, her skor,
+            <strong>Önemli:</strong> Aurora Justice Engine’de hiçbir şey "gizli" değildir. Her ceza, her skor,
             her policy değişikliği loglanır ve şeffaftır.
           </p>
         </div>
@@ -207,7 +208,7 @@ function Step2ScoringAndJustice({
           NovaScore & Ceza Sistemi
         </h2>
         <p className="text-sm text-gray-300 leading-relaxed">
-          Aurora seni <strong>NovaScore</strong> ile puanlar ve <strong>CP (Ceza Puanı)</strong> ile cezalandırır.
+          Aurora Justice Engine seni <strong>NovaScore</strong> ile puanlar ve <strong>CP (Ceza Puanı)</strong> ile cezalandırır.
         </p>
 
         {/* NovaScore Example */}
@@ -297,7 +298,7 @@ function Step3PolicyAndDAO({
           DAO & Policy Governance
         </h2>
         <p className="text-sm text-gray-300 leading-relaxed">
-          Aurora'nın ceza politikası <strong>DAO (Decentralized Autonomous Organization)</strong> tarafından yönetilir.
+          Aurora Justice Engine'in ceza politikası <strong>DAO (Decentralized Autonomous Organization)</strong> tarafından yönetilir.
           Policy parametreleri zincirde saklanır ve oylama ile değiştirilebilir.
         </p>
 
@@ -309,7 +310,7 @@ function Step3PolicyAndDAO({
             </h3>
             <PolicyBreakdown policy={policy as PolicyParams} />
             <p className="text-xs text-gray-400 mt-3">
-              Bu parametreler <strong>AuroraPolicyConfig</strong> sözleşmesinde saklanır ve backend tarafından
+              Bu parametreler <strong>AuroraPolicyConfig</strong> sözleşmesinde saklanır ve NovaCore backend tarafından
               senkronize edilir.
             </p>
           </div>
@@ -328,7 +329,7 @@ function Step3PolicyAndDAO({
               <strong>Simulation:</strong> Değişikliğin etkisi simüle edilir (1000+ vatandaş üzerinde)
             </li>
             <li>
-              <strong>Vote:</strong> AuroraDAO token sahipleri oy verir
+              <strong>Vote:</strong> Aurora Justice DAO token sahipleri oy verir
             </li>
             <li>
               <strong>Execution:</strong> Proposal geçerse, zincire yazılır
@@ -345,7 +346,7 @@ function Step3PolicyAndDAO({
             Veri Egemenliği: Recall Hakkı
           </h3>
           <p className="text-xs text-gray-300">
-            Aurora'da verinin sahibi sensin. İstediğin zaman verini sistemden geri çekebilirsin:
+            SiyahKare / NovaCore'da verinin sahibi sensin. İstediğin zaman verini sistemden geri çekebilirsin:
           </p>
           <div className="rounded-lg border border-white/10 bg-black/70 p-3">
             <RecallRequest

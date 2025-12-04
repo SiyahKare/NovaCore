@@ -15,7 +15,7 @@ from app.core.config import settings
 # Import all models so they're registered with SQLModel
 # This ensures Alembic can see all tables for autogenerate
 from app.identity.models import User  # noqa: F401
-from app.wallet.models import Account, LedgerEntry  # noqa: F401
+from app.wallet.models import Account, LedgerEntry, DailyTreasuryStat, NCRMarketState  # noqa: F401
 from app.xp_loyalty.models import UserLoyalty, XpEvent  # noqa: F401
 from app.nova_credit.models import CitizenScore, ScoreChange, RiskFlag  # noqa: F401
 from app.agency.models import Agency, AgencyOperator, Performer  # noqa: F401
@@ -26,7 +26,8 @@ from app.consent.models import (  # noqa: F401
     ConsentRecord,
     UserPrivacyProfile,
 )
-from app.justice.models import ViolationLog, UserCpState  # noqa: F401
+from app.justice.models import ViolationLog, UserCpState, TaskAppeal  # noqa: F401
+from app.justice.nasipcourt_models import RiskEvent, JusticeCase, JusticePenalty  # noqa: F401
 from app.telegram_gateway.models import TelegramAccount  # noqa: F401
 from app.telegram_gateway.task_models import (  # noqa: F401
     Task,
@@ -41,6 +42,9 @@ from app.telegram_gateway.event_models import (  # noqa: F401
     EventParticipation,
     EventReward,
 )
+from app.abuse.models import UserRiskProfile, AbuseEvent  # noqa: F401
+from app.quests.models import UserQuest  # noqa: F401
+from app.agency.models import CreatorAsset, AgencyClient  # noqa: F401
 
 # Alembic Config object
 config = context.config

@@ -13,6 +13,10 @@ const tabs = [
   { href: '/admin/aurora/events', label: 'Events' },
   { href: '/admin/aurora/growth', label: 'Growth' },
   { href: '/admin/aurora/policy', label: 'Policy' },
+  { href: '/admin/aurora/quests/monitor', label: 'HITL Monitor' },
+  { href: '/admin/aurora/ombudsman', label: 'Ombudsman' },
+  { href: '/admin/aurora/telegram-dashboard', label: 'Telegram Dashboard' },
+  { href: '/admin/economy', label: 'Economy' },
 ]
 
 export default function AuroraAdminLayout({ children }: { children: ReactNode }) {
@@ -24,9 +28,9 @@ export default function AuroraAdminLayout({ children }: { children: ReactNode })
         <header className="flex items-center justify-between gap-4">
           <div>
             <div className="text-xs uppercase tracking-[0.2em] text-purple-300">
-              Aurora Control Room
+              Aurora Justice Control Room
             </div>
-            <h1 className="text-2xl font-semibold text-gray-100">Admin Panel</h1>
+            <h1 className="text-2xl font-semibold text-gray-100">NovaCore Admin Panel</h1>
             <p className="text-xs text-gray-400 mt-1">
               Case yönetimi, ceza rejimi ve politika görünümü.
             </p>

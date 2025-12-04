@@ -3,9 +3,9 @@ pragma solidity ^0.8.20;
 
 /**
  * @title AuroraConstitution
- * @notice Immutable constitution hash for Aurora State Network
+ * @notice Immutable constitution hash for SiyahKare Republic
  * 
- * This contract stores the hash of the Aurora Data Ethics & Transparency Contract.
+ * This contract stores the hash of the SiyahKare Data Ethics & Transparency Contract.
  * The constitution is immutable and cannot be changed, even by DAO.
  * 
  * This ensures that fundamental rights (data ownership, recall rights, etc.)
@@ -14,7 +14,7 @@ pragma solidity ^0.8.20;
 contract AuroraConstitution {
     bytes32 public immutable constitutionHash;
     string public constant version = "v1.0";
-    string public constant documentName = "AuroraOS Veri Etiği ve Şeffaflık Sözleşmesi";
+    string public constant documentName = "SiyahKare Veri Etiği ve Şeffaflık Sözleşmesi";
 
     event ConstitutionHashSet(bytes32 indexed hash, string version);
 

@@ -1,9 +1,9 @@
 #!/bin/bash
-# Aurora Citizen Portal - Quick Validation Script
+# NovaCore Citizen Portal - Quick Validation Script
 
 set -e
 
-echo "🔍 Aurora Citizen Portal - Validation Check"
+echo "🔍 NovaCore Citizen Portal - Validation Check"
 echo "============================================"
 echo ""
 

@@ -1,9 +1,9 @@
-# Aurora DAO Integration - Policy Governance
+# Aurora Justice DAO Integration (NovaCore Policy Governance)
 
 ## Overview
 
-Aurora Justice Stack policy parameters are now **DAO-controlled**. This means:
-- Policy parameters (CP weights, decay, thresholds) can be changed by AuroraDAO governance
+Aurora Justice Engine policy parameters are **DAO-controlled**. This means:
+- Policy parameters (CP weights, decay, thresholds) can be changed by Aurora Justice DAO governance
 - Constitution layer (consent, recall rights) remains immutable
 - All policy changes are tracked and auditable
 
@@ -53,7 +53,7 @@ Aurora Justice Stack policy parameters are now **DAO-controlled**. This means:
 - Data Ethics & Transparency Contract (Articles 1-4)
 - Right to Recall
 - Redline principles
-- "Aurora citizen owns their data" - fundamental rights
+- "SiyahKare citizen owns their data" - fundamental rights
 
 ## Usage
 

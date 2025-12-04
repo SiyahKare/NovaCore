@@ -1,4 +1,4 @@
-# Aurora State Network - Quick Start Guide
+# NovaCore (SiyahKare Republic) - Quick Start Guide
 
 ## 🚀 Start the System
 
@@ -123,6 +123,6 @@ alembic downgrade -1
 1. ✅ System is running
 2. ✅ Consent flow works
 3. ✅ Test with real auth tokens
-4. ✅ Integrate with FlirtMarket/AuroraOS frontend
+4. ✅ Integrate with FlirtMarket/NovaCore frontend
 5. ✅ Add enforcement checks to critical endpoints
 

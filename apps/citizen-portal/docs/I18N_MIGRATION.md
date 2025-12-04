@@ -8,7 +8,7 @@
 4. ✅ Dil dosyaları oluşturuldu (`messages/tr.json`, `messages/en.json`, `messages/ru.json`)
 5. ✅ `[locale]` layout oluşturuldu
 6. ✅ `LanguageSwitcher` bileşeni eklendi
-7. ✅ `AuroraNav` güncellendi (dil değiştirici eklendi)
+7. ✅ `NovaCoreNav` güncellendi (dil değiştirici eklendi)
 
 ## 📋 Yapılması Gerekenler
 

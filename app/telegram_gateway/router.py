@@ -27,6 +27,11 @@ from .schemas import (
     TelegramTaskSubmitResponse,
     TelegramReferralClaimRequest,
     TelegramReferralClaimResponse,
+    TelegramStreakCheckinRequest,
+    TelegramStreakCheckinResponse,
+    PendingTaskSubmission,
+    DAOQueueResponse,
+    QuestResponse,
 )
 from .leaderboard_schemas import (
     LeaderboardResponse,
@@ -34,6 +39,7 @@ from .leaderboard_schemas import (
     ProfileCardResponse,
 )
 from .event_service import EventService
+from .quest_service import QuestService
 from .event_schemas import (
     ActiveEventsResponse,
     EventResponse,
@@ -41,6 +47,8 @@ from .event_schemas import (
     EventLeaderboardResponse,
     EventLeaderboardEntry,
 )
+from app.abuse.service import AbuseGuard
+from app.abuse.models import AbuseEventType
 
 router = APIRouter(prefix="/api/v1/telegram", tags=["telegram"])
 
@@ -392,11 +400,21 @@ async def submit_telegram_task(
             detail="Telegram account not found",
         )
     
-    # Abuse guard
-    abuse_guard = AbuseGuard(session)
+    # Abuse guards (old + new)
+    from .abuse_guard import AbuseGuard as OldAbuseGuard
+    old_abuse_guard = OldAbuseGuard(session)
+    risk_abuse_guard = AbuseGuard(session)
     
-    # Check task access
-    access_allowed, access_reason = await abuse_guard.check_task_access(
+    # Check cooldown (RiskScore 9+)
+    risk_profile = await risk_abuse_guard.get_or_create_profile(account.user_id)
+    if risk_abuse_guard.requires_cooldown(risk_profile.risk_score):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Hesabınız cooldown'da (RiskScore: {risk_profile.risk_score:.1f}/10). Lütfen daha sonra tekrar deneyin.",
+        )
+    
+    # Check task access (old guard)
+    access_allowed, access_reason = await old_abuse_guard.check_task_access(
         user_id=account.user_id,
         task_id=task_id,
     )
@@ -406,8 +424,8 @@ async def submit_telegram_task(
             detail=access_reason or "Göreve erişim reddedildi",
         )
     
-    # Check submission allowed (idempotency + rate limit)
-    submission_allowed, submission_reason = await abuse_guard.check_task_submission_allowed(
+    # Check submission allowed (idempotency + rate limit - old guard)
+    submission_allowed, submission_reason = await old_abuse_guard.check_task_submission_allowed(
         user_id=account.user_id,
         task_id=task_id,
         external_id=payload.metadata.get("external_id") if payload.metadata else None,
@@ -419,7 +437,8 @@ async def submit_telegram_task(
         )
     
     # Get task details
-    from app.telegram_gateway.task_models import Task, TaskSubmission, SubmissionStatus
+    from app.telegram_gateway.task_models import Task, TaskSubmission, SubmissionStatus, TaskAssignment
+    import hashlib
     
     task_result = await session.execute(
         select(Task).where(Task.id == task_id)
@@ -432,12 +451,46 @@ async def submit_telegram_task(
             detail="Görev bulunamadı",
         )
     
+    # Get assignment time for too-fast detection
+    assignment_result = await session.execute(
+        select(TaskAssignment).where(
+            and_(
+                TaskAssignment.user_id == account.user_id,
+                TaskAssignment.task_id == task_id,
+            )
+        ).order_by(TaskAssignment.assigned_at.desc())
+    )
+    assignment = assignment_result.scalar_one_or_none()
+    assigned_at = assignment.assigned_at if assignment else None
+    
+    # Check duplicate proof (if proof provided)
+    proof_hash = None
+    if payload.proof:
+        proof_hash = hashlib.sha256(payload.proof.encode()).hexdigest()
+        await risk_abuse_guard.check_duplicate_proof(
+            user_id=account.user_id,
+            task_id=task_id,
+            proof_hash=proof_hash,
+        )
+    
+    # Check too fast completion
+    if assigned_at:
+        await risk_abuse_guard.check_too_fast_completion(
+            user_id=account.user_id,
+            task_id=task_id,
+            assigned_at=assigned_at,
+        )
+    
     # Create submission (idempotent)
+    submission_metadata = payload.metadata or {}
+    if proof_hash:
+        submission_metadata["proof_hash"] = proof_hash
+    
     submission = TaskSubmission(
         user_id=account.user_id,
         task_id=task_id,
         proof=payload.proof,
-        proof_metadata=payload.metadata or {},
+        proof_metadata=submission_metadata,
         status=SubmissionStatus.PENDING,
         external_id=payload.metadata.get("external_id") if payload.metadata else None,
     )
@@ -445,29 +498,76 @@ async def submit_telegram_task(
     await session.commit()
     await session.refresh(submission)
     
-    # Auto-approve for simple tasks (proof_type == NONE)
+    # Auto-approve logic with RiskScore check
+    auto_approve = False
     if task.proof_type == "none":
+        # Simple tasks: auto-approve if RiskScore < 6 (no forced HITL)
+        if not risk_abuse_guard.requires_forced_hitl(risk_profile.risk_score):
+            auto_approve = True
+    
+    # TODO: AI Scoring integration here
+    # For now, we'll use simple auto-approve/reject logic
+    # In production, you'd call: score_result = await score_task(task, payload)
+    # total_score = score_result.total_score
+    # if total_score < 50: → REJECTED + AUTO_REJECT event
+    # elif 50 <= total_score < 70: → PENDING (HITL)
+    # else: → APPROVED
+    
+    if auto_approve:
         submission.status = SubmissionStatus.APPROVED
         session.add(submission)
         await session.commit()
+    else:
+        # For now, keep as PENDING (will be reviewed manually or by AI)
+        # If we had AI scoring, we'd set status based on score here
+        pass
+    
+    # Check for auto-reject (if status is REJECTED, register event)
+    if submission.status == SubmissionStatus.REJECTED:
+        # Register AUTO_REJECT event
+        await risk_abuse_guard.register_event(
+            user_id=account.user_id,
+            event_type=AbuseEventType.AUTO_REJECT,
+            meta={
+                "task_id": task_id,
+                "submission_id": submission.id,
+            },
+        )
+        # Check for low quality burst
+        await risk_abuse_guard.check_low_quality_burst(account.user_id)
     
     # Reward (if approved)
     if submission.status == SubmissionStatus.APPROVED:
         from app.telegram_gateway.task_models import TaskReward
         from decimal import Decimal
         
+        # Refresh risk profile (may have changed from events)
+        risk_profile = await risk_abuse_guard.get_or_create_profile(account.user_id)
+        
         # Base rewards
         base_xp = task.reward_xp
         base_ncr = Decimal(str(task.reward_ncr))
         
-        # Apply event bonuses
+        # Compute final rewards (Event bonuses + RiskScore multiplier)
+        # Single source of truth: EventService.compute_final_rewards
         event_service = EventService(session)
-        total_xp, total_ncr = await event_service.apply_event_bonuses(
+        total_xp, pre_treasury_ncr, risk_multiplier = await event_service.compute_final_rewards(
             user_id=account.user_id,
             task_id=task_id,
             base_xp=base_xp,
             base_ncr=base_ncr,
+            risk_score=risk_profile.risk_score,
         )
+        
+        # Apply Treasury Cap (günlük limit kontrolü)
+        from app.wallet.treasury_cap import apply_treasury_cap
+        from decimal import Decimal
+        
+        treasury_adjusted_ncr, treasury_meta = await apply_treasury_cap(
+            session=session,
+            pre_treasury_ncr=float(pre_treasury_ncr),
+        )
+        total_ncr = Decimal(str(treasury_adjusted_ncr))
         
         # XP event (total XP with bonuses)
         from app.xp_loyalty.schemas import XpEventCreate
@@ -483,13 +583,20 @@ async def submit_telegram_task(
             )
         )
         
-        # NCR reward (total NCR with bonuses)
+        # NCR reward (Treasury-adjusted NCR)
         wallet_service = WalletService(session)
+        wallet_metadata = {
+            "task_id": task_id,
+            "submission_id": submission.id,
+            "base_ncr": str(base_ncr),
+            "bonus_ncr": str(pre_treasury_ncr - base_ncr),
+            "treasury": treasury_meta,  # Treasury cap metadata
+        }
         wallet_tx = await wallet_service.credit(
             user_id=account.user_id,
             amount=float(total_ncr),
             source="telegram_task",
-            metadata={"task_id": task_id, "submission_id": submission.id, "base_ncr": str(base_ncr), "bonus_ncr": str(total_ncr - base_ncr)},
+            metadata=wallet_metadata,
         )
         
         # Create reward record
@@ -507,7 +614,19 @@ async def submit_telegram_task(
         submission.status = SubmissionStatus.REWARDED
         session.add(submission)
         await session.commit()
-        
+
+        # Content Curator Hook: Eğer submission yüksek kaliteli ise CreatorAsset'e dönüştür
+        try:
+            from app.agency.services.content_curator import curate_from_submission
+            asset = await curate_from_submission(session, submission.id)
+            if asset:
+                # Log success (optional)
+                pass
+        except Exception as e:
+            # Curator hatası reward'ı etkilemesin
+            import logging
+            logging.getLogger("content_curator").error(f"Failed to curate submission {submission.id}: {e}")
+
         # Get updated balance
         wallet = await wallet_service.get_account(account.user_id)
         loyalty = await loyalty_service.get_loyalty_profile(account.user_id)
@@ -519,17 +638,32 @@ async def submit_telegram_task(
         if total_ncr > base_ncr:
             bonus_msg += f" (+{total_ncr - base_ncr} NCR)"
         
+        # RiskScore mesajı (eğer multiplier < 1.0 ise)
+        risk_msg = ""
+        if risk_multiplier < 1.0:
+            risk_msg = f" (RiskScore: {risk_profile.risk_score:.1f}/10, çarpan: {risk_multiplier:.1f}x)"
+        
+        # Treasury mesajı (eğer damping uygulandıysa)
+        treasury_msg = ""
+        if treasury_meta.get("treasury_applied") and treasury_meta.get("multiplier", 1.0) < 1.0:
+            load_pct = treasury_meta.get("load_ratio", 0.0) * 100
+            treasury_msg = f" (Treasury yük: %{load_pct:.1f}, ödeme: {treasury_meta.get('multiplier', 1.0):.1f}x)"
+        
         return TelegramTaskSubmitResponse(
             success=True,
             task_id=task_id,
             reward_xp=total_xp,
             reward_ncr=str(total_ncr),
-            message=f"Görev tamamlandı! +{total_xp} XP, +{total_ncr} NCR{bonus_msg}",
+            message=f"Görev tamamlandı! +{total_xp} XP, +{total_ncr} NCR{bonus_msg}{risk_msg}{treasury_msg}",
             new_balance=str(wallet.balance) if wallet else "0",
             new_xp_total=loyalty.xp_total if loyalty else 0,
+            risk_score=risk_profile.risk_score,
+            hitl_required=risk_abuse_guard.requires_forced_hitl(risk_profile.risk_score),
+            reward_multiplier=risk_multiplier,
         )
     else:
-        # Pending review
+        # Pending review - refresh risk profile for response
+        risk_profile = await risk_abuse_guard.get_or_create_profile(account.user_id)
         return TelegramTaskSubmitResponse(
             success=True,
             task_id=task_id,
@@ -538,7 +672,70 @@ async def submit_telegram_task(
             message="Görev submit edildi, onay bekleniyor.",
             new_balance="0",
             new_xp_total=0,
+            risk_score=risk_profile.risk_score,
+            hitl_required=risk_abuse_guard.requires_forced_hitl(risk_profile.risk_score),
+            reward_multiplier=1.0,
         )
+
+
+@router.get(
+    "/quests",
+    response_model=QuestResponse,
+    summary="Günlük quest'leri getir",
+)
+async def get_user_quests(
+    telegram_user_id: int,
+    session: AsyncSession = Depends(get_session),
+    _verified: bool = Depends(verify_bridge_token),
+):
+    """
+    Kullanıcı için günlük quest'leri getir.
+    
+    - Onboarding tamamlanmamışsa boş liste döner
+    - Günlük quest'ler otomatik atanır
+    - Tamamlanmış quest'ler filtrelenir
+    """
+    account = await get_telegram_account(telegram_user_id, session)
+    
+    if not account:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Telegram account not found",
+        )
+    
+    quest_service = QuestService(session)
+    quests = await quest_service.get_user_quests(
+        user_id=account.user_id,
+        check_onboarding=True,
+    )
+    
+    # Convert to TelegramTask format
+    quest_tasks = []
+    for task in quests:
+        quest_tasks.append(
+            TelegramTask(
+                id=task.id,
+                title=task.title,
+                description=task.description,
+                category=task.category,
+                difficulty=task.difficulty.value,
+                task_type=task.task_type.value,
+                proof_type=task.proof_type.value,
+                reward_xp=task.reward_xp,
+                reward_ncr=task.reward_ncr,
+                status="available",
+                cooldown_seconds=task.cooldown_seconds,
+                expires_at=task.expires_at,
+                streak_required=task.streak_required,
+                max_completions_per_user=task.max_completions_per_user,
+            )
+        )
+    
+    return QuestResponse(
+        quests=quest_tasks,
+        total_available=len(quest_tasks),
+        onboarding_required=False,  # TODO: Check onboarding status
+    )
 
 
 @router.post(
@@ -1119,6 +1316,245 @@ async def get_event_leaderboard(
         event_name=event.name,
         entries=entries,
         total_participants=total_participants,
+        updated_at=datetime.utcnow(),
+    )
+
+
+@router.post(
+    "/streak/checkin",
+    response_model=TelegramStreakCheckinResponse,
+    summary="Günlük streak check-in",
+)
+async def streak_checkin(
+    payload: TelegramStreakCheckinRequest,
+    session: AsyncSession = Depends(get_session),
+    _verified: bool = Depends(verify_bridge_token),
+):
+    """
+    Günlük streak check-in.
+    
+    Kullanıcı her gün bot'a giriş yaptığında çağrılır.
+    Streak sayacı artar ve XP/NCR ödülü verilir.
+    """
+    account = await get_telegram_account(payload.telegram_user_id, session)
+    
+    if not account:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Telegram account not found",
+        )
+    
+    # Get loyalty profile
+    loyalty_service = XpLoyaltyService(session)
+    loyalty = await loyalty_service.get_loyalty_profile(account.user_id)
+    
+    # Check if already checked in today
+    from app.xp_loyalty.models import XpEvent
+    from sqlalchemy import func, cast, Date
+    
+    today = datetime.utcnow().date()
+    today_start = datetime.combine(today, datetime.min.time())
+    
+    checkin_query = (
+        select(func.count(XpEvent.id))
+        .where(
+            and_(
+                XpEvent.user_id == account.user_id,
+                XpEvent.event_type == "STREAK_CHECKIN",
+                cast(XpEvent.created_at, Date) == today,
+            )
+        )
+    )
+    checkin_result = await session.execute(checkin_query)
+    already_checked_in = (checkin_result.scalar_one() or 0) > 0
+    
+    if already_checked_in:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Zaten bugün check-in yaptın!",
+        )
+    
+    # Calculate streak
+    # Get last check-in date
+    last_checkin_query = (
+        select(XpEvent.created_at)
+        .where(
+            and_(
+                XpEvent.user_id == account.user_id,
+                XpEvent.event_type == "STREAK_CHECKIN",
+            )
+        )
+        .order_by(XpEvent.created_at.desc())
+        .limit(1)
+    )
+    last_checkin_result = await session.execute(last_checkin_query)
+    last_checkin = last_checkin_result.scalar_one_or_none()
+    
+    current_streak = loyalty.current_streak if loyalty else 0
+    max_streak = loyalty.max_streak if loyalty else 0
+    
+    if last_checkin:
+        last_date = last_checkin.date()
+        yesterday = (datetime.utcnow() - timedelta(days=1)).date()
+        
+        if last_date == yesterday:
+            # Streak continues
+            current_streak += 1
+        elif last_date == today:
+            # Already checked in today (shouldn't happen, but double-check)
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Zaten bugün check-in yaptın!",
+            )
+        else:
+            # Streak broken, reset to 1
+            current_streak = 1
+    else:
+        # First check-in
+        current_streak = 1
+    
+    # Update max streak
+    if current_streak > max_streak:
+        max_streak = current_streak
+    
+    # Calculate rewards (base + streak bonus)
+    base_xp = 10
+    base_ncr = "1.0"
+    
+    # Streak bonus multipliers
+    streak_multiplier = 1.0
+    if current_streak >= 30:
+        streak_multiplier = 2.0
+    elif current_streak >= 14:
+        streak_multiplier = 1.5
+    elif current_streak >= 7:
+        streak_multiplier = 1.25
+    elif current_streak >= 3:
+        streak_multiplier = 1.1
+    
+    reward_xp = int(base_xp * streak_multiplier)
+    reward_ncr = str(float(base_ncr) * streak_multiplier)
+    
+    # Create XP event
+    from app.xp_loyalty.schemas import XpEventCreate
+    
+    xp_event = await loyalty_service.create_xp_event(
+        XpEventCreate(
+            user_id=account.user_id,
+            amount=reward_xp,
+            event_type="STREAK_CHECKIN",
+            source_app="nasipquest",
+            metadata={
+                "streak_days": current_streak,
+                "streak_multiplier": streak_multiplier,
+            },
+        )
+    )
+    
+    # Update loyalty streak
+    if loyalty:
+        loyalty.current_streak = current_streak
+        loyalty.max_streak = max_streak
+        session.add(loyalty)
+    
+    # NCR reward
+    wallet_service = WalletService(session)
+    wallet_tx = await wallet_service.credit(
+        user_id=account.user_id,
+        amount=float(reward_ncr),
+        source="streak_checkin",
+        metadata={"streak_days": current_streak},
+    )
+    
+    await session.commit()
+    
+    # Get updated balance
+    wallet = await wallet_service.get_account(account.user_id)
+    updated_loyalty = await loyalty_service.get_loyalty_profile(account.user_id)
+    
+    bonus_msg = ""
+    if streak_multiplier > 1.0:
+        bonus_msg = f" (Streak bonus: {current_streak} gün x{streak_multiplier:.2f})"
+    
+    return TelegramStreakCheckinResponse(
+        success=True,
+        current_streak=current_streak,
+        max_streak=max_streak,
+        reward_xp=reward_xp,
+        reward_ncr=reward_ncr,
+        message=f"Check-in başarılı! +{reward_xp} XP, +{reward_ncr} NCR{bonus_msg}",
+        new_balance=str(wallet.balance) if wallet else "0",
+        new_xp_total=updated_loyalty.xp_total if updated_loyalty else 0,
+    )
+
+
+@router.get(
+    "/dao/queue",
+    response_model=DAOQueueResponse,
+    summary="DAO inceleme kuyruğu (pending submissions)",
+)
+async def get_dao_queue(
+    limit: int = 50,
+    offset: int = 0,
+    session: AsyncSession = Depends(get_session),
+    _verified: bool = Depends(verify_bridge_token),
+):
+    """
+    DAO Vekilleri için manuel inceleme kuyruğu.
+    
+    Pending durumundaki task submission'ları listeler.
+    Bridge token + Admin yetki kontrolü gereklidir.
+    """
+    # Admin check (via bridge token - in production, verify admin status)
+    # For now, bridge token is sufficient (admin-only endpoint)
+    
+    from app.telegram_gateway.task_models import TaskSubmission, Task, SubmissionStatus
+    from sqlalchemy import func
+    
+    # Get pending submissions
+    query = (
+        select(TaskSubmission, Task, TelegramAccount, User)
+        .join(Task, TaskSubmission.task_id == Task.id)
+        .join(TelegramAccount, TaskSubmission.user_id == TelegramAccount.user_id)
+        .join(User, TaskSubmission.user_id == User.id)
+        .where(TaskSubmission.status == SubmissionStatus.PENDING)
+        .order_by(TaskSubmission.submitted_at.asc())
+        .limit(limit)
+        .offset(offset)
+    )
+    
+    result = await session.execute(query)
+    rows = result.all()
+    
+    submissions = []
+    for submission, task, account, user in rows:
+        submissions.append(
+            PendingTaskSubmission(
+                submission_id=submission.id,
+                user_id=submission.user_id,
+                telegram_user_id=account.telegram_user_id,
+                username=account.username or user.username,
+                display_name=user.display_name or account.first_name,
+                task_id=task.id,
+                task_title=task.title,
+                proof=submission.proof,
+                proof_metadata=submission.proof_metadata or {},
+                submitted_at=submission.submitted_at,
+                status=submission.status.value,
+            )
+        )
+    
+    # Count total pending
+    count_query = (
+        select(func.count(TaskSubmission.id))
+        .where(TaskSubmission.status == SubmissionStatus.PENDING)
+    )
+    count_result = await session.execute(count_query)
+    total_pending = count_result.scalar_one() or 0
+    
+    return DAOQueueResponse(
+        submissions=submissions,
+        total_pending=total_pending,
         updated_at=datetime.utcnow(),
     )
 

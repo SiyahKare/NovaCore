@@ -1,5 +1,5 @@
 #!/bin/bash
-# Aurora State Network - Smoke Test Script
+# NovaCore - Smoke Test Script
 # Tests the complete Aurora citizen journey: Consent → NovaScore → Justice → Recall
 
 set -e
@@ -18,7 +18,7 @@ NC='\033[0m' # No Color
 TEST_USER_ID="AUR-TEST-$(date +%s)"
 SESSION_ID=""
 
-echo -e "${BLUE}🔷 Aurora State Network - Smoke Test${NC}"
+echo -e "${BLUE}🔷 NovaCore - Smoke Test${NC}"
 echo -e "${BLUE}=====================================${NC}"
 echo ""
 

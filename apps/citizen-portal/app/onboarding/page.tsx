@@ -19,10 +19,10 @@ export default function OnboardingPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <header className="space-y-2">
-        <div className="text-xs uppercase tracking-[0.2em] text-purple-300">Aurora Onboarding</div>
+        <div className="text-xs uppercase tracking-[0.2em] text-purple-300">SiyahKare Onboarding</div>
         <h1 className="text-3xl font-semibold">Become a Citizen</h1>
         <p className="text-sm text-gray-400">
-          3 adımda Aurora devletine giriş yapıyorsun. Bu bir ürün kayıt formu değil; bir dijital
+          3 adımda SiyahKare Cumhuriyeti'ne giriş yapıyorsun. Bu bir ürün kayıt formu değil; dijital
           vatandaşlık sözleşmesi.
         </p>
       </header>
@@ -92,7 +92,7 @@ function StepAuth({ onNext }: { onNext: () => void }) {
       const apiUrl = process.env.NEXT_PUBLIC_AURORA_API_URL || 'http://localhost:8000/api/v1'
       
       // Try login first
-      let res = await fetch(`${apiUrl}/auth/email/login`, {
+      let res = await fetch(`${apiUrl}/identity/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -100,7 +100,7 @@ function StepAuth({ onNext }: { onNext: () => void }) {
 
       // If login fails with 401, try register
       if (!res.ok && res.status === 401) {
-        res = await fetch(`${apiUrl}/auth/email/register`, {
+        res = await fetch(`${apiUrl}/identity/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, display_name: email.split('@')[0] }),
@@ -167,7 +167,7 @@ function StepAuth({ onNext }: { onNext: () => void }) {
 
   return (
     <>
-      <h2 className="text-xl font-semibold mb-2">Aurora Vatandaşlığına Başla</h2>
+      <h2 className="text-xl font-semibold mb-2">SiyahKare Vatandaşlığına Başla</h2>
       <p className="text-sm text-gray-300 mb-6">
         Devam etmek için bir kimlik doğrulama yöntemi seç. Email, Google veya dev mode kullanabilirsin.
       </p>
@@ -276,16 +276,16 @@ function StepAuth({ onNext }: { onNext: () => void }) {
 function StepIntro({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
   return (
     <>
-      <h2 className="text-xl font-semibold mb-2">Aurora bir "uygulama" değil, bir protokol-devlet.</h2>
+      <h2 className="text-xl font-semibold mb-2">NovaCore + Aurora bir "uygulama" değil, bir devlet motoru.</h2>
       <p className="text-sm text-gray-300 mb-4">
-        Burada hesap açmıyorsun; davranışın, verin ve hakların bir{' '}
-        <strong>NovaScore + Justice + Consent</strong> üçgenine yazılıyor. Devlet motoru backend'de,
-        politika DAO'da, hakların anayasada.
+        Burada hesap açmıyorsun; davranışın, verin ve hakların{' '}
+        <strong>NovaScore + Aurora Justice + Consent</strong> üçgenine yazılıyor. Devlet motoru NovaCore’da,
+        politika Aurora Justice DAO’da, hakların SiyahKare Anayasası’nda.
       </p>
 
       <ul className="list-disc list-inside text-sm text-gray-300 space-y-1 mb-6">
         <li>Verinin sahibi sensin, onayı veren de sensin.</li>
-        <li>Politika parametreleri AuroraDAO tarafından oylanır.</li>
+        <li>Politika parametreleri Aurora Justice DAO tarafından oylanır.</li>
         <li>Ceza sistemi şeffaf; CP ve rejimin her an görünür.</li>
       </ul>
 
@@ -420,7 +420,7 @@ function StepConsent({ onBack, onNext }: { onBack: () => void; onNext: () => voi
     <>
       <h2 className="text-xl font-semibold mb-2">Veri Etiği & Şeffaflık Sözleşmesi</h2>
       <p className="text-sm text-gray-300 mb-4">
-        Aurora'ya kabul edilmeden önce, Veri Etiği Sözleşmesi'ni interaktif olarak onaylaman
+        SiyahKare sistemine kabul edilmeden önce, Veri Etiği Sözleşmesi'ni interaktif olarak onaylaman
         gerekiyor. Bu, seni de devleti de koruyan katman.
       </p>
 

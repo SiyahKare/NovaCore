@@ -30,11 +30,11 @@ function DashboardInner() {
   const { policy } = usePolicy()
 
   const headlineByRegime: Record<string, string> = {
-    NORMAL: 'Temiz bir Aurora vatandaşısın.',
-    SOFT_FLAG: 'Davranışların küçük sapmaları var. Sistem seni izliyor.',
-    PROBATION: 'Probasyon altındasın. Aurora davranışlarını yakından takip ediyor.',
+    NORMAL: 'SiyahKare vatandaşlık statün temiz.',
+    SOFT_FLAG: 'Davranışlarında küçük sapmalar var. Aurora Justice seni izliyor.',
+    PROBATION: 'Probasyon altındasın. Aurora Justice Engine davranışlarını yakından takip ediyor.',
     RESTRICTED: 'Erişimlerin kısıtlandı. Bazı aksiyonlar artık kapalı veya sınırlı.',
-    LOCKDOWN: 'Aurora seni kilitledi. Sadece itiraz edebilir, verilerini görebilirsin.',
+    LOCKDOWN: 'Aurora Justice Engine seni kilitledi. Sadece itiraz edebilir, verilerini görebilirsin.',
   }
 
   if (citizenState.loading) {
@@ -56,7 +56,7 @@ function DashboardInner() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
-          Aurora Profilin
+          NovaCore Profilin
         </h1>
         <p className="text-gray-400">Dijital vatandaşlığının kapsamlı özeti</p>
       </div>
@@ -73,12 +73,12 @@ function DashboardInner() {
             >
               Tekrar Dene
             </button>
-            <a
+            <Link
               href="/onboarding"
               className="px-3 py-1.5 text-xs font-medium text-yellow-300 border border-yellow-500/50 hover:border-yellow-500 rounded transition-colors"
             >
               Onboarding'e Git
-            </a>
+            </Link>
           </div>
           <p className="text-[10px] text-yellow-500/70 mt-3">
             Not: Eğer yeni bir kullanıcıysan, önce onboarding'i tamamlaman gerekebilir.
@@ -115,7 +115,7 @@ function DashboardInner() {
 
       {/* Top Row: State Health + Citizen Health + Quick Actions */}
       <div className="grid md:grid-cols-3 gap-4">
-        {/* Aurora State Health */}
+        {/* Aurora Justice Health */}
         <AuroraStateHealth />
 
         {/* Citizen Health Summary */}

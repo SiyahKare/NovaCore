@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import {  } from 'next/navigation'
 
 interface ModuleCardProps {
   slug: string

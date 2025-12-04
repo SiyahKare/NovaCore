@@ -1,6 +1,6 @@
 """
 NovaCore Treasury Routes
-AuroraOS Nation Console için Treasury API endpoints
+SiyahKare Nation Console için Treasury API endpoints
 """
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,7 +33,7 @@ async def get_treasury_summary(
     service: TreasuryService = Depends(get_treasury_service),
 ):
     """
-    Treasury summary for AuroraOS dashboard.
+    Treasury summary for NovaCore dashboard.
     
     Returns:
         - total_treasury: Tüm pool'ların toplam bakiyesi
@@ -107,7 +107,7 @@ async def get_revenue_by_app_chart(
     service: TreasuryService = Depends(get_treasury_service),
 ):
     """
-    Revenue chart data by app for AuroraOS.
+    Revenue chart data by app for NovaCore.
     
     Returns time series data for revenue breakdown by app.
     """
@@ -163,7 +163,7 @@ async def get_revenue_by_kind_chart(
     service: TreasuryService = Depends(get_treasury_service),
 ):
     """
-    Revenue chart data by kind (event type) for AuroraOS.
+    Revenue chart data by kind (event type) for NovaCore.
     
     Returns time series data for revenue breakdown by event kind.
     """

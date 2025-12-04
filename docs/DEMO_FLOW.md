@@ -1,6 +1,6 @@
-# Aurora Citizen Pitch Demo Flow (v1)
+# SiyahKare / NovaCore Pitch Demo Flow (v1)
 
-Bu doküman, AuroraOS'u birine **10–15 dakikada** anlatırken kullanacağın canlı demo akışıdır.  
+Bu doküman, SiyahKare Cumhuriyeti ve NovaCore motorunu birine **10–15 dakikada** anlatırken kullanacağın canlı demo akışıdır.  
 Amaç: "Bu sadece app değil, gerçekten çalışan bir **dijital devlet protokolü**" hissini net vermek.
 
 ---
@@ -41,7 +41,7 @@ Amaç: "Bu sadece app değil, gerçekten çalışan bir **dijital devlet protoko
 
 * Cümle (kısa):
 
-  > "Aurora bir uygulama değil; üç katmanlı bir dijital devlet motoru.
+  > "NovaCore bir uygulama değil; SiyahKare Cumhuriyeti'nin üç katmanlı dijital devlet motoru.
   > Vatandaşın verisini, skorunu ve cezasını **anayasaya bağlı** yönetiyor."
 
 * Hero'daki "How it works" 3 bullet'a dokun:
@@ -60,7 +60,7 @@ Anlatım iskeleti:
 
 1. **Hero cümlesi:**
 
-   > "Burası Aurora'nın manifestosu. Yani fikrin hukuki ve teknik omurgası."
+   > "Burası SiyahKare'nin manifestosu. Yani fikrin hukuki ve teknik omurgası."
 
 2. Soldaki 3 katman kartını oku:
 
@@ -76,7 +76,7 @@ Anlatım iskeleti:
 
      > "Ceza ağırlıkları, decay, threshold'lar **DAO'nun kontrolünde**. Hard-code yok."
 
-4. "How Aurora Works" 4-step grid:
+4. "How NovaCore Works" 4-step grid:
 
    * Onboarding & kimlik
    * Consent & PLA
@@ -131,7 +131,7 @@ Sol panelden sırasıyla geçir:
 
 **Pitch note alanını oku:**
 
-> "Bu sayfa Aurora'yı ilk defa görene şunu göstermek için:
+> "Bu sayfa NovaCore + Aurora Justice'i ilk defa görene şunu göstermek için:
 > Bu sadece puanlama değil; ceza, veri, politika ve UI hepsi aynı protokolün parçası."
 
 Burada kısa dur, soruları al.
@@ -215,8 +215,8 @@ Standart 2–3 dakikalık elevator pitch:
 
 1. **Opening:**
 
-   > "Aurora, AI çağında kurulmuş bir dijital devlet protokolü.
-   > Verini, skorunu ve cezanı **anayasaya bağlı**, şeffaf ve DAO kontrollü yönetiyor."
+   > "SiyahKare, AI çağında kurulmuş bir dijital devlet protokolü.
+   > NovaCore, verini, skorunu ve cezanı **anayasaya bağlı**, şeffaf ve DAO kontrollü yönetiyor."
 
 2. **Göster: `/about`**
 
@@ -229,7 +229,7 @@ Standart 2–3 dakikalık elevator pitch:
 
 4. **Kapat:**
 
-   > "Fark şu: Aurora bir feature set değil, kendi anayasası olan küçük bir devlet motoru.
+   > "Fark şu: NovaCore bir feature set değil, kendi anayasası olan küçük bir devlet motoru.
    > Sen istersen FlirtMarket'e, istersen başka bir sosyal/finansal ağa bunu embed edebilirsin."
 
 ---
@@ -257,5 +257,5 @@ Standart 2–3 dakikalık elevator pitch:
 
 ---
 
-Aurora Citizen Pitch Kit v1 bu akışla **sahnede, Zoom'da, kahve masasında** direkt kullanılabilir.
+SiyahKare / NovaCore Pitch Kit v1 bu akışla **sahnede, Zoom'da, kahve masasında** direkt kullanılabilir.
 

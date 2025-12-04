@@ -1,0 +1,268 @@
+{
+  "version": "1.0",
+  "description": "SiyahKare Marketplace - Ürün Kataloğu V1 (19 Ürün)",
+  "products": [
+    {
+      "id": "viral_hook",
+      "name": "Viral Hook (Text)",
+      "description": "3-12 kelimelik çarpıcı giriş cümlesi. TikTok/Instagram Reels için.",
+      "category": "HOOK_CONTENT",
+      "price_range": [1.5, 3.0],
+      "default_price": 2.0,
+      "quest_category": "PRODUCTION",
+      "quest_keywords": ["hook", "viral", "giriş", "cümle", "reels"],
+      "tags": ["hook", "viral", "content", "reels", "tiktok"],
+      "ai_score_threshold": 70.0,
+      "top_selling_rank": 1
+    },
+    {
+      "id": "short_script",
+      "name": "Short Script (30-45 saniye)",
+      "description": "3 sahne, aksiyon cümlesi, kapanış cümlesi. Creator'lar direkt videoya okur.",
+      "category": "HOOK_CONTENT",
+      "price_range": [4.0, 6.0],
+      "default_price": 5.0,
+      "quest_category": "PRODUCTION",
+      "quest_keywords": ["script", "video", "sahne", "kısa"],
+      "tags": ["script", "video", "content", "creator"],
+      "ai_score_threshold": 70.0
+    },
+    {
+      "id": "caption_pack",
+      "name": "Caption Pack (5'li)",
+      "description": "Instagram/TikTok için hazır yazı paketi. Premium hüzün / premium motivasyon tarzı.",
+      "category": "HOOK_CONTENT",
+      "price_range": [3.0, 5.0],
+      "default_price": 4.0,
+      "quest_category": "PRODUCTION",
+      "quest_keywords": ["caption", "yazı", "paket", "instagram"],
+      "tags": ["caption", "instagram", "tiktok", "content"],
+      "ai_score_threshold": 70.0,
+      "top_selling_rank": 3
+    },
+    {
+      "id": "story_pack",
+      "name": "Story Pack (Instagram 3 kare)",
+      "description": "3 mini paragraf. Estetik dil. Instagram Stories için.",
+      "category": "HOOK_CONTENT",
+      "price_range": [5.0, 8.0],
+      "default_price": 6.5,
+      "quest_category": "PRODUCTION",
+      "quest_keywords": ["story", "instagram", "kare", "paragraf"],
+      "tags": ["story", "instagram", "content"]
+    },
+    {
+      "id": "seo_video_desc",
+      "name": "SEO Video Description",
+      "description": "Creator YouTube videoları için optimize edilmiş açıklama.",
+      "category": "HOOK_CONTENT",
+      "price_range": [4.0, 8.0],
+      "default_price": 6.0,
+      "quest_category": "PRODUCTION",
+      "quest_keywords": ["seo", "description", "youtube", "video", "açıklama"],
+      "tags": ["seo", "youtube", "video", "description"]
+    },
+    {
+      "id": "keyword_cluster_pack",
+      "name": "Keyword Cluster Pack",
+      "description": "YouTube / TikTok keşfet için 30 anahtar kelime.",
+      "category": "HOOK_CONTENT",
+      "price_range": [6.0, 10.0],
+      "default_price": 8.0,
+      "quest_category": "RESEARCH",
+      "quest_keywords": ["keyword", "cluster", "keşfet", "anahtar"],
+      "tags": ["keyword", "seo", "research", "youtube", "tiktok"]
+    },
+    {
+      "id": "hashtag_set",
+      "name": "Hashtag Set (Niche-specific)",
+      "description": "15-25 tane hashtag. Çok hızlı satılır.",
+      "category": "HOOK_CONTENT",
+      "price_range": [2.0, 4.0],
+      "default_price": 3.0,
+      "quest_category": "PRODUCTION",
+      "quest_keywords": ["hashtag", "tag", "etiket"],
+      "tags": ["hashtag", "instagram", "tiktok", "social"],
+      "ai_score_threshold": 70.0,
+      "top_selling_rank": 2
+    },
+    {
+      "id": "tiktok_trend_report",
+      "name": "TikTok Trend Report (Günlük)",
+      "description": "Bugün trend olan 5 sound + 5 konsept. Ajanslar bu ürüne bayılır.",
+      "category": "HOOK_CONTENT",
+      "price_range": [6.0, 12.0],
+      "default_price": 9.0,
+      "quest_category": "RESEARCH",
+      "quest_keywords": ["trend", "tiktok", "report", "günlük", "sound"],
+      "tags": ["trend", "tiktok", "research", "report"],
+      "ai_score_threshold": 70.0,
+      "top_selling_rank": 4
+    },
+    {
+      "id": "premium_prompt_pack",
+      "name": "Premium Prompt Pack (4'lü)",
+      "description": "Foto/AI kapak görseli için. 'Fox goddess', 'Baron noir', 'Sigma vibe' gibi.",
+      "category": "VISUAL_PROMPT",
+      "price_range": [6.0, 15.0],
+      "default_price": 10.0,
+      "quest_category": "PRODUCTION",
+      "quest_keywords": ["prompt", "ai", "görsel", "kapak", "premium"],
+      "tags": ["prompt", "ai", "visual", "premium"]
+    },
+    {
+      "id": "reels_thumbnail_prompt",
+      "name": "Reels Thumbnail Prompt",
+      "description": "Neon, sigma, motivational vibe thumbnail prompt'u.",
+      "category": "VISUAL_PROMPT",
+      "price_range": [3.0, 6.0],
+      "default_price": 4.5,
+      "quest_category": "PRODUCTION",
+      "quest_keywords": ["thumbnail", "reels", "prompt", "neon"],
+      "tags": ["thumbnail", "reels", "prompt", "visual"]
+    },
+    {
+      "id": "storyboard_mini",
+      "name": "Storyboard Mini (3 sahne)",
+      "description": "Video üreten creatorlar için 3 sahnelik storyboard.",
+      "category": "VISUAL_PROMPT",
+      "price_range": [8.0, 20.0],
+      "default_price": 14.0,
+      "quest_category": "PRODUCTION",
+      "quest_keywords": ["storyboard", "sahne", "video", "plan"],
+      "tags": ["storyboard", "video", "production", "plan"]
+    },
+    {
+      "id": "competitor_research",
+      "name": "Competitor Research (Mini)",
+      "description": "Bir rakip hesabın analizini çıkarır. 5 maddelik hızlı özet.",
+      "category": "RESEARCH_LEVEL",
+      "price_range": [10.0, 25.0],
+      "default_price": 17.0,
+      "quest_category": "RESEARCH",
+      "quest_keywords": ["competitor", "rakip", "analiz", "research"],
+      "tags": ["research", "competitor", "analysis", "kobi"]
+    },
+    {
+      "id": "trend_opportunity_report",
+      "name": "Trend Opportunity Report",
+      "description": "Bugün fırsat olan 3 içerik fikri.",
+      "category": "RESEARCH_LEVEL",
+      "price_range": [10.0, 18.0],
+      "default_price": 14.0,
+      "quest_category": "RESEARCH",
+      "quest_keywords": ["trend", "opportunity", "fırsat", "fikir"],
+      "tags": ["trend", "opportunity", "research", "report"]
+    },
+    {
+      "id": "nano_industry_report",
+      "name": "Nano-Industry Report",
+      "description": "'Kuaförler için 5 içerik fikri' gibi niche-specific rapor.",
+      "category": "RESEARCH_LEVEL",
+      "price_range": [15.0, 30.0],
+      "default_price": 22.0,
+      "quest_category": "RESEARCH",
+      "quest_keywords": ["industry", "niche", "rapor", "kobi"],
+      "tags": ["research", "industry", "niche", "kobi"]
+    },
+    {
+      "id": "local_niche_pack",
+      "name": "Local Niche Pack (Şehir bazlı)",
+      "description": "'İzmit'te 5 viral çekim noktası' gibi şehir bazlı içerik paketi. Türkiye'de deli satar.",
+      "category": "RESEARCH_LEVEL",
+      "price_range": [8.0, 15.0],
+      "default_price": 11.0,
+      "quest_category": "RESEARCH",
+      "quest_keywords": ["local", "şehir", "niche", "izmit", "ankara", "istanbul"],
+      "tags": ["local", "niche", "city", "türkiye"],
+      "ai_score_threshold": 70.0,
+      "top_selling_rank": 5
+    },
+    {
+      "id": "toxic_comment_cleaner",
+      "name": "Toxic Comment Cleaner Pack",
+      "description": "20 problemli yorumu etiketler. Ajans için zaman kazancı.",
+      "category": "MODERATION_TRUST",
+      "price_range": [6.0, 12.0],
+      "default_price": 9.0,
+      "quest_category": "MODERATION",
+      "quest_keywords": ["toxic", "comment", "temizlik", "moderation"],
+      "tags": ["moderation", "toxic", "comment", "agency"]
+    },
+    {
+      "id": "spam_detection_report",
+      "name": "Spam Detection Report (Mini)",
+      "description": "10 spam yorum → açıklamalı.",
+      "category": "MODERATION_TRUST",
+      "price_range": [4.0, 8.0],
+      "default_price": 6.0,
+      "quest_category": "MODERATION",
+      "quest_keywords": ["spam", "detection", "rapor"],
+      "tags": ["moderation", "spam", "detection", "agency"]
+    },
+    {
+      "id": "shadowban_risk_check",
+      "name": "Shadowban Risk Check (Mini)",
+      "description": "Hesap incelemesi → 10 maddelik risk raporu. Çok değerli.",
+      "category": "MODERATION_TRUST",
+      "price_range": [15.0, 25.0],
+      "default_price": 20.0,
+      "quest_category": "MODERATION",
+      "quest_keywords": ["shadowban", "risk", "check", "hesap"],
+      "tags": ["moderation", "shadowban", "risk", "agency"]
+    },
+    {
+      "id": "social_value_pack",
+      "name": "Social Value Pack",
+      "description": "Sigma/motivasyon söz paketi (5 adet). Creator'lar bunları caption olarak kullanıyor.",
+      "category": "COMMUNITY_RITUAL",
+      "price_range": [4.0, 8.0],
+      "default_price": 6.0,
+      "quest_category": "COMMUNITY",
+      "quest_keywords": ["social", "value", "söz", "motivasyon", "sigma"],
+      "tags": ["social", "value", "motivation", "caption"]
+    }
+  ],
+  "categories": {
+    "HOOK_CONTENT": {
+      "name": "Hook & Content Packs",
+      "description": "En Para Basan kategori. Creator'ların satın aldığı şey bu.",
+      "product_count": 8
+    },
+    "VISUAL_PROMPT": {
+      "name": "Visual / Prompt Varlıkları",
+      "description": "Görsel ve AI prompt paketleri.",
+      "product_count": 3
+    },
+    "RESEARCH_LEVEL": {
+      "name": "Research-Level Assets",
+      "description": "En değerli kategori - KOBİ'ler için.",
+      "product_count": 4
+    },
+    "MODERATION_TRUST": {
+      "name": "Moderation & Trust",
+      "description": "Ajansların en sevdiği varlıklar.",
+      "product_count": 3
+    },
+    "COMMUNITY_RITUAL": {
+      "name": "Community & Ritual",
+      "description": "Satılabilir bonus assets.",
+      "product_count": 1
+    }
+  },
+  "top_selling": [
+    "viral_hook",
+    "hashtag_set",
+    "caption_pack",
+    "tiktok_trend_report",
+    "local_niche_pack"
+  ],
+  "pricing_policy": {
+    "version": "v1",
+    "description": "AI Score bazlı dinamik fiyatlandırma",
+    "formula": "price = min_price + (max_price - min_price) * ((ai_score - 70) / 30)",
+    "base_quest_reward_factor": 0.1,
+    "max_quest_reward_impact": 0.2
+  }
+}
+

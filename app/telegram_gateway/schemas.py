@@ -76,6 +76,13 @@ class TelegramTasksResponse(BaseModel):
     total_completed: int
 
 
+class QuestResponse(BaseModel):
+    """Quest response (günlük quest'ler)."""
+    quests: list[TelegramTask]
+    total_available: int
+    onboarding_required: bool = False
+
+
 class TelegramTaskSubmitRequest(BaseModel):
     """Görev tamamlama isteği."""
     task_id: str
@@ -92,6 +99,10 @@ class TelegramTaskSubmitResponse(BaseModel):
     message: str
     new_balance: str
     new_xp_total: int
+    # AbuseGuard metrics
+    risk_score: float = 0.0
+    hitl_required: bool = False
+    reward_multiplier: float = 1.0
 
 
 class TelegramReferralClaimRequest(BaseModel):
@@ -105,4 +116,43 @@ class TelegramReferralClaimResponse(BaseModel):
     reward_xp: int = 0
     reward_ncr: str = "0"
     message: str
+
+
+class TelegramStreakCheckinRequest(BaseModel):
+    """Streak check-in request."""
+    telegram_user_id: int = Field(..., description="Telegram user ID")
+
+
+class TelegramStreakCheckinResponse(BaseModel):
+    """Streak check-in response."""
+    success: bool
+    current_streak: int = 0
+    max_streak: int = 0
+    reward_xp: int = 0
+    reward_ncr: str = "0"
+    message: str
+    new_balance: str
+    new_xp_total: int
+
+
+class PendingTaskSubmission(BaseModel):
+    """Pending task submission for DAO review."""
+    submission_id: int
+    user_id: int
+    telegram_user_id: int
+    username: Optional[str] = None
+    display_name: Optional[str] = None
+    task_id: str
+    task_title: str
+    proof: Optional[str] = None
+    proof_metadata: dict = Field(default_factory=dict)
+    submitted_at: datetime
+    status: str = "pending"
+
+
+class DAOQueueResponse(BaseModel):
+    """DAO review queue response."""
+    submissions: list[PendingTaskSubmission]
+    total_pending: int
+    updated_at: datetime
 

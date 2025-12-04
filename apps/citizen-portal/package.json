@@ -12,14 +12,18 @@
   "dependencies": {
     "@aurora/hooks": "file:../../packages/aurora-hooks",
     "@aurora/ui": "file:../../packages/aurora-ui",
+    "@formatjs/intl": "^3.1.8",
+    "@formatjs/intl-localematcher": "^0.5.10",
     "date-fns": "^4.1.0",
     "next": "^14.0.4",
-    "next-intl": "^3.0.0",
+    "next-intl": "^3.26.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "recharts": "^3.5.1",
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",

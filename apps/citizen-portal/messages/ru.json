@@ -61,6 +61,36 @@
     "emailAuth": "Войти по электронной почте",
     "googleAuth": "Войти через Google",
     "devMode": "Режим разработчика"
+  },
+  "home": {
+    "badge": "Республика SiyahKare · Движок NovaCore Justice",
+    "title": "Добро пожаловать в ваше цифровое государство,",
+    "titleHighlight": "Гражданин.",
+    "description": "Республика SiyahKare опирается на идеологию DeltaNova, ядро NovaCore и модуль Aurora Justice. Суверенитет данных принадлежит вам, закон на цепочке, исполнение прозрачно.",
+    "becomeCitizen": "Стать гражданином",
+    "openDashboard": "Открыть панель управления",
+    "daoControlled": "Политика под управлением DAO",
+    "daoControlledSub": "AuroraPolicyConfig.sol",
+    "justiceEngine": "Движок правосудия v2",
+    "justiceEngineSub": "CP · Режим · Принуждение",
+    "constitution": "Защищено конституцией",
+    "constitutionSub": "AuroraConstitution.sol",
+    "snapshot": "Снимок Aurora",
+    "simulated": "Симуляция",
+    "regime": "Режим",
+    "citizenInGoodStanding": "Гражданин в хорошем положении",
+    "latestPolicyChange": "Последнее изменение политики",
+    "onChain": "в блокчейне",
+    "howItWorks": "Как работают NovaCore и Aurora?",
+    "step1Title": "1 · Согласие и суверенитет данных",
+    "step1Description": "При входе в SiyahKare вы сначала одобряете Соглашение об этике данных. Данные красной линии под дополнительной защитой, ваше право на отзыв всегда открыто.",
+    "step2Title": "2 · NovaScore и режим",
+    "step2Description": "Ваше поведение, вклад и нарушения преобразуются в оценки через NovaScore и CP/Режим. Система прозрачно классифицирует вас: NORMAL → SOFT_FLAG → PROBATION → RESTRICTED → LOCKDOWN.",
+    "step3Title": "3 · Политика под управлением DAO",
+    "step3Description": "Веса штрафов, коэффициенты затухания и правила принуждения голосуются Aurora Justice DAO. Изменения политики записываются в блокчейн, бэкенд только применяет их.",
+    "ctaTitle": "Готовы? Давайте станем гражданином.",
+    "ctaDescription": "Станьте гражданином SiyahKare с помощью 3-шагового онбординга, создайте свой NovaScore, посмотрите свой режим, узнайте свои права.",
+    "startOnboarding": "Начать онбординг"
   }
 }
 

@@ -1,6 +1,6 @@
 # app/telemetry/models.py
 """
-Aurora Telemetry Models - Growth & Education Event Tracking
+NovaCore Telemetry Models - Growth & Education Event Tracking
 """
 from datetime import datetime
 from typing import Optional

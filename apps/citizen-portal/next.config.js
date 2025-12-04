@@ -1,7 +1,3 @@
-const createNextIntlPlugin = require('next-intl/plugin');
-
-const withNextIntl = createNextIntlPlugin('./i18n.ts');
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -9,14 +5,24 @@ const nextConfig = {
   experimental: {
     serverActions: true,
   },
-  // Allow importing from packages
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-    }
+  // Allow importing from packages and root node_modules
+  webpack: (config, { isServer }) => {
+    const path = require('path')
+    
+    // Resolve modules from local node_modules first, then root
+    const rootNodeModules = path.resolve(__dirname, '../../node_modules')
+    const localNodeModules = path.resolve(__dirname, 'node_modules')
+    
+    config.resolve.modules = [
+      'node_modules',
+      localNodeModules,
+      rootNodeModules,
+      ...(config.resolve.modules || []),
+    ]
+    
     return config
   },
 }
 
-module.exports = withNextIntl(nextConfig)
+module.exports = nextConfig
 

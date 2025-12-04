@@ -1,7 +1,7 @@
 """
 NovaCore Wallet Models - NCR Ledger
 """
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 
@@ -30,6 +30,48 @@ class Account(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class DailyTreasuryStat(SQLModel, table=True):
+    """
+    Günlük Treasury istatistiği.
+    
+    Her gün için:
+    - O günün limit'i (snapshot)
+    - Şu ana kadar dağıtılan toplam NCR
+    """
+    __tablename__ = "daily_treasury_stats"
+    
+    id: int | None = Field(default=None, primary_key=True)
+    day: date = Field(index=True, unique=True)
+    
+    # O gün için hedef/limit (snapshot)
+    limit_ncr: float = Field(default=0.0)
+    # Şu ana kadar dağıtılan toplam NCR
+    issued_ncr: float = Field(default=0.0)
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class NCRMarketState(SQLModel, table=True):
+    """
+    NCR fiyatı ve piyasa metrikleri.
+    
+    Tek satırlık global bir kayıt (id=1).
+    """
+    __tablename__ = "ncr_market_state"
+    
+    id: int | None = Field(default=None, primary_key=True)
+    
+    current_price_try: float = Field(default=1.0)
+    last_price_try: float = Field(default=1.0)
+    
+    ema_coverage: float = Field(default=1.0)  # 1.0 = %100 teminat
+    ema_flow_index: float = Field(default=0.0)  # pozitif = sistemden fazla çıkış / baskı
+    
+    # Basit telemetri
+    last_updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
         json_schema_extra = {

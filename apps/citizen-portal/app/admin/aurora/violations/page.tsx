@@ -1,7 +1,7 @@
 // apps/citizen-portal/app/admin/aurora/violations/page.tsx
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from 'next/navigation';
 import { useState } from "react";
 import { useAdminViolations } from "@aurora/hooks";
 import { RegimeBadge } from "@aurora/ui";

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import {  } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { RecallRequest } from '@aurora/ui'
 import { useAuroraEvents } from '@aurora/hooks'
@@ -10,7 +11,7 @@ const bullets = [
   'Verinin yegâne sahibi sensin (Mutlak Sahiplik).',
   'Kırmızı Hat veriler (sağlık, inanç, politika, cinsellik) ekstra koruma altında.',
   'Recall hakkın var: eğitim datasetinden çıkma hakkı.',
-  'Aurora kararlarından temyiz talep edebilirsin (Ombudsman).',
+  'Aurora Justice kararlarından temyiz talep edebilirsin (Ombudsman).',
 ]
 
 export default function ConstitutionModulePage() {
@@ -32,10 +33,10 @@ export default function ConstitutionModulePage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="text-xs uppercase tracking-[0.2em] text-purple-300">
-            Aurora Academy · Core Module
+            NovaCore Academy · Core Module
           </div>
           <h1 className="text-2xl md:text-3xl font-semibold mt-1">
-            Aurora Constitution & Veri Egemenliği
+            SiyahKare Constitution & Veri Egemenliği
           </h1>
         </div>
         <button
@@ -48,9 +49,9 @@ export default function ConstitutionModulePage() {
 
       <section className="space-y-3 text-sm text-gray-300">
         <p>
-          Aurora'nın kalbinde bir söz var:{' '}
+          SiyahKare Cumhuriyeti'nin kalbinde bir söz var:{' '}
           <strong>"Veri devlete değil, vatandaşa aittir."</strong> Bu, sadece bir slogan değil;
-          backend'de immutable kayıtlara, chain'de Anayasa hash'ine yazılmış bir gerçek.
+          NovaCore kayıtlarına ve chain'deki anayasa hash'ine yazılmış bir gerçek.
         </p>
         <p>
           Burada kabul ettiğin Veri Etiği & Şeffaflık Sözleşmesi, YZ modellerinin hangi verini
@@ -71,7 +72,7 @@ export default function ConstitutionModulePage() {
       <section className="space-y-3 text-xs text-gray-400">
         <h3 className="text-sm font-semibold text-gray-200">Recall hakkı pratikte ne demek?</h3>
         <p>
-          Diyelim ki son 1 yılda yaptığın etkileşimler Aurora YZ modelini eğitmek için kullanıldı.
+          Diyelim ki son 1 yılda yaptığın etkileşimler NovaCore/Aurora modellerini eğitmek için kullanıldı.
           Bir gün fikrini değiştirdin ve "Artık bu modelin eğitim setinde olmak istemiyorum."
           dedin.
         </p>

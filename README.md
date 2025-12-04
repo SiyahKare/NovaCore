@@ -1,16 +1,21 @@
-# NovaCore 🔷
+# SiyahKare Republic · NovaCore Kernel
 
-**NovaCore = Kernel.** Nova ekosisteminin kalbi.
+**DeltaNova Ideology → NovaCore Execution Engine → Aurora Justice Stack**
 
-> **Aurora State Network** - DAO-controlled, constitution-protected, execution-enforced digital state.
+> SiyahKare Cumhuriyeti, DeltaNova ideolojisini NovaCore çekirdeği üzerinden çalıştırır. NovaCore’un adalet katmanı Aurora Justice Engine’dir.
 
-[![Aurora State](https://img.shields.io/badge/Aurora-State%20Network-purple)](./docs/AURORA_STATE_ARCHITECTURE.md)
+[![SiyahKare Architecture](https://img.shields.io/badge/SiyahKare-Architecture-black)](./docs/AURORA_STATE_ARCHITECTURE.md)
 [![Dashboard v2](https://img.shields.io/badge/Dashboard-v2-blue)](./apps/citizen-portal)
 [![DAO Governance](https://img.shields.io/badge/DAO-Governance-green)](./docs/DAO_INTEGRATION.md)
 
-## 🏛️ Aurora State Network
+## 🏛️ Devlet Katmanları
 
-NovaCore artık **Aurora Adalet Stack v3.0** ile tam bir **DAO-controlled dijital devlet**:
+1. **SiyahKare Republic (State Layer)** – Vatandaşlık, anayasa, haklar.
+2. **DeltaNova Ideology (Philosophy Layer)** – Behavior is Currency, NovaCredit/NovaScore teorisi.
+3. **NovaCore Kernel (Execution Layer)** – FastAPI + Next.js runtime, ledger, consent, telemetry, agency.
+4. **Aurora Justice Engine (Governance Module)** – CP/Regime, violations, ombudsman, enforcement, DAO policy.
+
+NovaCore + Aurora kombinasyonu şu yetenekleri sağlar:
 
 - **Consent Management**: GDPR-compliant consent flow, immutable ledger
 - **Justice System**: CP (Ceza Puanı) calculation, regime-based enforcement
@@ -48,6 +53,15 @@ CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 
 # Frontend API URL
 NEXT_PUBLIC_AURORA_API_URL=http://localhost:8000/api/v1
+
+# Telegram Gateway (optional)
+TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
+TELEGRAM_BRIDGE_TOKEN=your-secure-bridge-token-here
+TELEGRAM_LINK_SECRET=your-hmac-secret-here  # Optional, uses JWT_SECRET if not set
+
+# Telethon (Aurora Contact User Bot - optional)
+TELETHON_API_ID=your-telegram-api-id  # From https://my.telegram.org
+TELETHON_API_HASH=your-telegram-api-hash
 ```
 
 ## 🚀 Quick Start
@@ -98,7 +112,10 @@ npm run dev
 ```
 
 **Citizen Portal:** `http://localhost:3000`  
-**Admin Panel:** `http://localhost:3000/admin/aurora`
+- **Türkçe:** `http://localhost:3000/tr` (default)
+- **English:** `http://localhost:3000/en`
+- **Русский:** `http://localhost:3000/ru`
+- **Admin Panel:** `http://localhost:3000/tr/admin/aurora`
 
 ### 3. Verify Installation
 
@@ -126,20 +143,24 @@ curl http://localhost:8000/health
 
 ## 📱 Frontend Ecosystem
 
-### Aurora Citizen Portal
+### NovaCore Citizen Portal
 
-**Next.js 14** tabanlı vatandaş portalı:
+**Next.js 14** tabanlı SiyahKare vatandaş portalı:
 
-- **Dashboard v2**: Devran-level state console
+- **Dashboard v2**: Devran-level state console (NovaCore telemetry)
   - Real-time citizen state (Identity, Wallet, Loyalty, Privacy, NovaScore, CP, Violations)
-  - Aurora State Health panel (DAO status, Policy version)
+  - Aurora Justice Health panel (DAO status, policy version)
   - Citizen Timeline (join, consent, violations, regime changes)
   - Trust Factors (account age, violation frequency, behavior risk)
   - Quick Actions (Recall, Appeal, Consent Review)
 - **Onboarding**: Multi-step wizard (Auth, Consent, NovaScore Preview)
-- **Academy**: Educational content about Aurora
-- **Justice**: Case file viewer
+- **Academy**: Educational content about DeltaNova & SiyahKare
+- **Justice (Aurora)**: Case file viewer
 - **Consent**: Detailed consent management with recall
+- **Admin Panels**:
+  - **Ombudsman Quest Monitor**: Aurora HITL quest review, RiskScore filtering, approve/reject decisions
+  - **Telegram Dashboard**: Aurora Contact Business Hunter console (3-column layout)
+  - **Economy Dashboard**: NasipQuest economy metrics and charts
 
 **Tech Stack:**
 - Next.js 14 (App Router)
@@ -147,18 +168,33 @@ curl http://localhost:8000/health
 - Tailwind CSS
 - shadcn/ui components
 - Shared libraries: `@aurora/ui`, `@aurora/hooks`
+- **i18n Support**: next-intl (Türkçe, English, Русский)
 
-### Aurora Control Room (Admin Panel)
+### NovaCore Admin Console (Aurora Justice Control Room)
 
-**Admin-only** panel for system management:
+**Admin-only** panel for NovaCore yönetimi ve Aurora Justice operasyonu:
 
-- **Overview**: Quick stats and case lookup
+- **Overview**: NovaCore stats and case lookup
 - **Stats Dashboard**: Full system metrics
 - **Case Files**: Ombudsman case viewer
-- **Policy Viewer**: Current policy and history
+- **Policy Viewer**: Aurora policy and history
 - **Violation Stream**: Real-time violation feed
 - **User Management**: User list, recall management, admin privileges
 - **Growth Metrics**: Telemetry and education tracking
+- **Ombudsman Quest Monitor**: Aurora HITL (Human-In-The-Loop) quest review panel
+  - RiskScore ≥ 6.0 quest'leri yönetme
+  - Onay/Red kararları verme
+  - AbuseGuard entegrasyonu
+- **Telegram Dashboard**: Aurora Contact Business Hunter console
+  - 3-column layout (Queue, Chat, Lead Intelligence)
+  - AI/Human hybrid chat
+  - Lead scoring ve pipeline takibi
+  - Real-time conversation management
+- **Economy Dashboard**: NasipQuest economy metrics
+  - NCR price tracking
+  - Treasury health
+  - Daily load statistics
+  - RiskScore distribution
 
 **Access:** `/admin/aurora` (requires `is_admin: true`)
 
@@ -177,16 +213,20 @@ curl http://localhost:8000/health
 - `useRegimeTheme`: Regime-aware UI theming
 - `useCurrentCitizen`, `useConsentFlow`
 - `useAuroraEvents`, `useGrowthMetrics`
+- `useHitlQuests`: HITL quest monitor hook
+- `useTelegramConversations`: Telegram conversation management
+- `useTelegramStats`: Dashboard statistics
 
 ## 🏗️ Architecture
 
-### 3-Layer State Architecture
+### SiyahKare Governance Stack
 
-1. **Chain Law (Mutable)**: DAO-controlled policy parameters
-2. **Constitution (Immutable)**: Fundamental rights (consent, recall)
-3. **Execution (Runtime)**: Policy enforcement and CP calculation
+1. **DeltaNova Ideology** (Philosophy) – Behavior is Currency, NovaCredit, manifesto.
+2. **Chain Law / DAO Policy** (Mutable) – Aurora policy parameters, validator consensus.
+3. **Constitution** (Immutable) – Consent, recall, citizen rights.
+4. **NovaCore Execution** (Runtime) – API, ledger, telemetry, Aurora CP/Regime enforcement.
 
-See `docs/AURORA_STATE_ARCHITECTURE.md` for details.
+See `docs/AURORA_STATE_ARCHITECTURE.md` for full breakdown.
 
 ### Monorepo Structure
 
@@ -204,22 +244,33 @@ NovaCore/
     justice/              # Violation logging, CP, enforcement (DAO-controlled)
     nova_score/           # Behavioral reputation score
     telemetry/            # Growth & education event tracking
+    telegram_gateway/     # Telegram bot bridge, task engine, referral system
+    quests/               # Production-ready Quest Engine (UserQuest, QuestFactory, HITL)
+    abuse/                # AbuseGuard (RiskScore, abuse detection, reward multipliers)
+    wallet/               # NCR Ledger, Treasury Cap, NCR Price Stabilization
+    agency/               # Creator → Agency Pipeline, Revenue Share, ChatManager
+    voice_engine/         # Telethon client (Aurora Contact User Bot)
     main.py
   apps/                   # Frontend Applications
-    citizen-portal/       # Next.js 14 Citizen Portal
+    citizen-portal/       # Next.js 14 Citizen Portal (i18n: tr/en/ru)
       app/
-        dashboard/        # Dashboard v2
-        onboarding/       # Multi-step onboarding
-        academy/          # Educational content
-        consent/          # Consent management
-        justice/          # Case file viewer
-        admin/            # Admin Panel
+        [locale]/         # Locale-based routing (tr, en, ru)
+          dashboard/      # Dashboard v2
+          onboarding/     # Multi-step onboarding
+          academy/        # Educational content
+          consent/        # Consent management
+          justice/        # Case file viewer
+          admin/          # Admin Panel
+      messages/           # i18n translation files
+      middleware.ts       # Locale routing middleware
+      navigation.ts       # Locale-aware navigation
   packages/               # Shared Libraries
     aurora-ui/            # Shared React components
     aurora-hooks/         # Shared data hooks
   scripts/               # Utility scripts
   docs/                  # Documentation
   alembic/               # Database migrations
+  nasipquest_bot/        # Telegram bot (NasipQuest)
 ```
 
 ## 📡 API Endpoints
@@ -231,8 +282,8 @@ NovaCore/
 | Module | Endpoint | Method | Description |
 |--------|----------|--------|-------------|
 | **Identity** | `/api/v1/identity/me` | GET | Current user profile |
-| **Identity** | `/api/v1/auth/email/register` | POST | Email registration |
-| **Identity** | `/api/v1/auth/email/login` | POST | Email login |
+| **Identity** | `/api/v1/identity/register` | POST | Email registration |
+| **Identity** | `/api/v1/identity/login` | POST | Email login |
 | **Identity** | `/api/v1/dev/token` | GET | Dev mode token |
 | **Wallet** | `/api/v1/wallet/me` | GET | NCR balance |
 | **Loyalty** | `/api/v1/loyalty/me` | GET | XP, level, tier |
@@ -248,9 +299,9 @@ NovaCore/
 
 **Identity & Auth:**
 ```
-POST /api/v1/auth/telegram/verify  → JWT token (Telegram)
-POST /api/v1/auth/email/register  → Email registration
-POST /api/v1/auth/email/login     → Email login
+POST /api/v1/identity/telegram/auth  → JWT token (Telegram)
+POST /api/v1/identity/register       → Email registration
+POST /api/v1/identity/login          → Email login
 GET  /api/v1/identity/me           → Current user profile
 GET  /api/v1/dev/token             → Dev mode token (testing)
 ```
@@ -269,7 +320,7 @@ POST /api/v1/loyalty/event         → Create XP event
 GET  /api/v1/loyalty/profile/{id}  → User loyalty profile
 ```
 
-### Aurora Justice Stack
+### Aurora Justice Engine
 
 **Consent:**
 ```
@@ -312,11 +363,59 @@ GET  /api/v1/admin/summary                → System summary
 GET  /api/v1/admin/aurora/users            → User list with filters
 PATCH /api/v1/admin/aurora/users/{id}/admin → Toggle admin privileges
 GET  /api/v1/admin/aurora/violations      → Violation stream
+GET  /api/v1/admin/aurora/events          → Event list
+GET  /api/v1/admin/aurora/events/{id}     → Event detail
 ```
 
-## 🎯 Aurora State Activation
+**Telegram Gateway (NasipQuest):**
+```
+POST /api/v1/telegram/link                → Link Telegram account
+GET  /api/v1/telegram/me                  → Full profile (wallet, XP, NovaScore, CP)
+GET  /api/v1/telegram/tasks               → Available tasks
+POST /api/v1/telegram/tasks/{task_id}/submit → Submit task completion
+POST /api/v1/telegram/referral/claim      → Claim referral reward
+GET  /api/v1/telegram/leaderboard          → Top users leaderboard
+GET  /api/v1/telegram/profile-card         → User profile card
+GET  /api/v1/telegram/events               → Active events
+POST /api/v1/telegram/events/{id}/join     → Join event
+GET  /api/v1/telegram/events/{id}/leaderboard → Event leaderboard
+POST /api/v1/telegram/streak/checkin      → Streak check-in
+GET  /api/v1/telegram/dao/queue            → HITL review queue
+```
 
-Aurora Justice Stack is now **DAO-controlled**. Complete activation with:
+**Quest Engine (Production-Ready):**
+```
+GET  /api/v1/telegram/quests/today        → Daily quests
+POST /api/v1/telegram/quests/submit        → Submit quest proof
+GET  /api/v1/telegram/quests/active        → Active quests
+GET  /api/v1/admin/quests/hitl             → HITL queue (admin)
+POST /api/v1/admin/quests/{id}/hitl-decision → HITL decision (admin)
+```
+
+**Agency & Revenue Share:**
+```
+GET  /api/v1/agency/assets/viral           → Curated viral assets
+POST /api/v1/agency/assets/{id}/record-revenue → Record campaign revenue
+PATCH /api/v1/agency/assets/{id}/use       → Mark asset as used
+PATCH /api/v1/agency/assets/{id}/approve   → Approve asset
+```
+
+**Aurora Contact Telegram Dashboard:**
+```
+GET  /api/v1/admin/telegram/conversations  → Conversation list
+GET  /api/v1/admin/telegram/conversations/{id} → Conversation detail
+GET  /api/v1/admin/telegram/leads/{id}     → Lead detail
+POST /api/v1/admin/telegram/conversations/{id}/send-message → Send message
+POST /api/v1/admin/telegram/conversations/{id}/handoff → Human handoff
+POST /api/v1/admin/telegram/leads/{id}/notes → Save lead notes
+GET  /api/v1/admin/telegram/stats          → Dashboard statistics
+```
+
+**See:** `docs/NASIPQUEST_TASK_ENGINE_V3.md` for complete task engine documentation.
+
+## 🎯 Aurora Justice Activation
+
+Aurora Justice Engine (NovaCore modülü) tamamen **DAO-controlled**. Aktivasyon adımları:
 
 ```bash
 # Complete activation (all steps)
@@ -346,7 +445,7 @@ python scripts/sync_dao_policy.py  # After contract deployment
 7. **Violations**: Recent violation history
 
 ### Lighthouse Blocks
-- **Aurora State Health**: DAO status, policy version, on-chain info
+- **Aurora Justice Health**: DAO status, policy version, on-chain info
 - **Citizen Health**: NovaScore, CP, regime, trend
 - **My Actions**: Quick access to Recall, Appeal, Consent Review
 
@@ -492,11 +591,21 @@ See `.github/workflows/aurora-smoke-test.yml`
 - `docs/AURORA_JUSTICE_V2.md` - Complete Justice Stack guide
 - `docs/DAO_INTEGRATION.md` - DAO governance integration
 - `docs/DAO_GOVERNANCE_FLOW.md` - Governance flow
+- `docs/API_DOCUMENTATION.md` - Complete API reference
 
 ### Frontend
 - `docs/FRONTEND_ECOSYSTEM.md` - Frontend architecture
 - `docs/FRONTEND_INTEGRATION.md` - Integration guide
 - `docs/WEB_USER_AUTH.md` - Web authentication
+- `docs/I18N_SETUP.md` - Multi-language support (i18n) setup
+
+### Telegram & Task Engine
+- `docs/NASIPQUEST_TASK_ENGINE_V3.md` - Complete task engine architecture
+- `docs/TELEGRAM_BRIDGE.md` - Telegram bot integration
+- `docs/TELEGRAM_TOKENS_EXPLAINED.md` - Token configuration guide
+- `docs/BRIDGE_TOKEN_EXPLAINED.md` - Bridge token security
+- `docs/LINK_SECRET_EXPLAINED.md` - Start parameter HMAC
+- `docs/OMBUDSMAN_INTEGRATION.md` - Ombudsman Paneli ve HITL quest review
 
 ### Operations
 - `docs/OMBUDSMAN_INTEGRATION.md` - Ombudsman/Operator integration
@@ -513,7 +622,7 @@ See `.github/workflows/aurora-smoke-test.yml`
 
 | Modül | Açıklama |
 |-------|----------|
-| **Identity/SSO** | Telegram ID ↔ internal `user_id`, JWT üretimi, Email auth |
+| **Identity/SSO** | Telegram ID ↔ internal `user_id`, JWT üretimi, Email auth (EmailLoginRequest, EmailRegisterRequest) |
 | **Wallet/NCR Ledger** | NCR bakiyesi, harcama, kazanma, rake, fee, treasury |
 | **XP/Loyalty** | XP events, level, tier (Bronze/Silver/Gold/Diamond) |
 | **Agency** | Agency, Performer, operator modelleri, gelir paylaşımı |
@@ -524,7 +633,14 @@ See `.github/workflows/aurora-smoke-test.yml`
 | **NovaScore** | Behavioral reputation score with CP integration |
 | **Telemetry** | Growth & education event tracking |
 | **DAO** | Policy governance, on-chain sync, version control |
-| **Frontend** | Citizen Portal, Admin Panel, Shared UI/Hooks |
+| **Frontend** | Citizen Portal, Admin Panel, Shared UI/Hooks, i18n (tr/en/ru) |
+| **Telegram Gateway** | NasipQuest bot integration, task engine, referral system |
+| **Quest Engine** | Production-ready quest system (UserQuest, QuestFactory, HITL) |
+| **AbuseGuard** | RiskScore calculation, abuse detection, reward multipliers, cooldown enforcement |
+| **Treasury Cap** | Daily NCR limit, damping multipliers, economic sustainability |
+| **NCR Price Stabilization** | Dynamic price adjustment based on coverage ratio and flow index |
+| **Agency Pipeline** | Creator → Agency conversion, Revenue Share (20/40/40), Content Curator |
+| **Aurora Contact** | Telegram User Bot (Telethon), AI/Human hybrid chat, Lead Intelligence |
 
 ## 🛠️ Troubleshooting
 
@@ -687,6 +803,29 @@ curl http://localhost:8000/api/v1/nova-score/me \
 ```
 
 ## 🎉 Version History
+
+**v0.5** - Production-Ready Quest Engine & Aurora Contact
+- ✅ Production-Ready Quest Engine (UserQuest, QuestFactory, QuestService)
+- ✅ AbuseGuard integration (RiskScore, abuse detection, reward multipliers)
+- ✅ Treasury Cap system (daily NCR limits, damping multipliers)
+- ✅ NCR Price Stabilization Algorithm (coverage ratio, flow index, EMA smoothing)
+- ✅ Ombudsman Paneli (HITL Quest Monitor) - RiskScore ≥ 6.0 quest review
+- ✅ Creator → Agency Conversion Pipeline (ContentCurator, CreatorAsset)
+- ✅ Revenue Share mekanizması (20/40/40 paylaşım: Creator/Treasury/Agency)
+- ✅ Aurora Contact Telegram Dashboard (3-column layout, AI/Human hybrid chat)
+- ✅ Telethon User Bot integration (Aurora Contact Business Hunter)
+- ✅ ChatManager (Grok/GPT hybrid routing, intent classification, tool calling)
+- ✅ NasipQuest Economy Dashboard (NCR price, Treasury health, metrics)
+
+**v0.4** - i18n & Task Engine
+- ✅ Multi-language support (Türkçe, English, Русский)
+- ✅ next-intl integration
+- ✅ Locale-aware routing
+- ✅ NasipQuest Task Engine v3
+- ✅ Task submission & reward system
+- ✅ Referral system
+- ✅ Event bonus system
+- ✅ Leaderboard & profile cards
 
 **v0.3** - Dashboard v2: Devran-level citizen state console
 - ✅ Unified `useCitizenState` hook

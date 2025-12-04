@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Aurora Citizen Portal - Global Styles */
+/* NovaCore Citizen Portal - Global Styles */
 
 @layer base {
   * {
@@ -19,7 +19,7 @@
 }
 
 @layer components {
-  /* Aurora Card - Enhanced with neon glow and depth */
+  /* NovaCore Card - Enhanced with neon glow and depth */
   .aurora-card {
     @apply bg-slate-900/50 border border-slate-800 rounded-lg p-6 backdrop-blur-sm;
     @apply transition-all duration-300;
@@ -38,7 +38,7 @@
     transform: translateY(-1px);
   }
 
-  /* Aurora Button */
+  /* NovaCore Button */
   .aurora-button {
     @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
     @apply bg-aurora-purple hover:bg-aurora-purple-dark text-white;
@@ -50,7 +50,7 @@
     @apply bg-slate-800 hover:bg-slate-700 text-slate-100;
   }
 
-  /* Aurora Input */
+  /* NovaCore Input */
   .aurora-input {
     @apply w-full px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg;
     @apply text-slate-100 placeholder-slate-500;
@@ -134,7 +134,7 @@
   }
 }
 
-/* Aurora color utilities are defined in tailwind.config.ts */
+/* Aurora Justice color utilities are defined in tailwind.config.ts */
 /* Use directly: text-aurora-purple, bg-aurora-purple, etc. */
 
 .bg-aurora-gradient {

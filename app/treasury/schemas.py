@@ -51,7 +51,7 @@ class SystemAccountOut(BaseModel):
 
 
 class TreasurySummary(BaseModel):
-    """Treasury summary for AuroraOS dashboard."""
+    """Treasury summary for NovaCore dashboard."""
     total_treasury: Decimal
     pools_balance: Dict[str, Decimal]  # POOL_GROWTH, POOL_PERFORMER, POOL_DEV
     last_24h_revenue: Decimal
@@ -71,7 +71,7 @@ class TreasuryFlowQuery(BaseModel):
 
 
 class RevenueChartData(BaseModel):
-    """Revenue chart data for AuroraOS."""
+    """Revenue chart data for NovaCore."""
     labels: List[str]  # Timestamps
     revenue: List[Decimal]
     app_breakdown: Dict[str, List[Decimal]]  # App bazlı breakdown

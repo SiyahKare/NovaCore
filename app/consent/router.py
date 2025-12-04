@@ -377,7 +377,7 @@ class ConsentService:
 
         # Şimdilik hardcoded; ileride config'ten çekersin
 
-        return f"AuroraOS Veri Etiği ve Şeffaflık Sözleşmesi ({contract_version})"
+        return f"SiyahKare Veri Etiği ve Şeffaflık Sözleşmesi ({contract_version})"
 
 
 

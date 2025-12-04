@@ -2,12 +2,13 @@
 
 import { ProtectedView } from '@/components/ProtectedView'
 import Link from 'next/link'
+import {  } from 'next/navigation'
 import { ModuleCard } from './components/ModuleCard'
 
 const modules = [
   {
     slug: 'constitution',
-    title: 'Aurora Constitution',
+    title: 'SiyahKare Constitution',
     level: 'Core · Zorunlu',
     minutes: 6,
     description: 'Veri Etiği & Şeffaflık Sözleşmesi, Kırmızı Hat verileri ve recall hakkın.',
@@ -53,10 +54,10 @@ function StartHereSection() {
             Yeni Başlayanlar İçin
           </div>
           <h2 className="text-2xl font-semibold text-white">
-            Start Here: 7 Dakikada Aurora
+            Start Here: 7 Dakikada SiyahKare / NovaCore
           </h2>
           <p className="text-sm text-gray-300 max-w-xl">
-            Aurora'yı ilk defa görüyorsan, bu track ile başla. 3 adımda tüm sistemi kavrayacaksın:
+            NovaCore & Aurora Justice'i ilk defa görüyorsan bu track ile başla. 3 adımda tüm sistemi kavrayacaksın:
             "Bu ne?", "Beni nasıl puanlıyorsun?", "Politikayı nasıl değiştiririm?"
           </p>
         </div>
@@ -75,12 +76,12 @@ function AcademyInner() {
   return (
     <div className="space-y-8">
       <header className="space-y-2">
-        <div className="text-xs uppercase tracking-[0.2em] text-purple-300">Aurora Academy</div>
+        <div className="text-xs uppercase tracking-[0.2em] text-purple-300">NovaCore Academy</div>
         <h1 className="text-3xl font-semibold">Dijital Devlet için Hızlandırılmış Eğitim</h1>
         <p className="text-sm text-gray-400 max-w-2xl">
-          Burada Aurora'nın nasıl çalıştığını; NovaScore, Justice Engine, DAO governance ve
-          Anayasa katmanını parça parça öğrenirsin. Amaç: "Bu ne lan?" seviyesinden → "Ben bu
-          sistemi hackleyip optimize ederim" seviyesine çıkartmak.
+          Burada SiyahKare / NovaCore / Aurora Justice üçgeninin nasıl çalıştığını; NovaScore, justice engine,
+          DAO governance ve Anayasa katmanını parça parça öğrenirsin. Amaç: "Bu ne lan?" seviyesinden → "Ben bu
+          sistemi optimize ederim" seviyesine çıkartmak.
         </p>
       </header>
 

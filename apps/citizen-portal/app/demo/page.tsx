@@ -33,7 +33,7 @@ const DEMO_PROFILES: Record<DemoProfileKey, DemoProfile> = {
   CLEAN: {
     id: "CLEAN",
     label: "Clean Citizen",
-    description: "Hiç ihlali olmayan, Aurora tarafından full güvenilen vatandaş.",
+    description: "Hiç ihlali olmayan, NovaCore / Aurora Justice tarafından full güvenilen vatandaş.",
     regime: "NORMAL",
     cp: 0,
     novaScore: 820,
@@ -122,13 +122,13 @@ export default function DemoPage() {
       {/* Hero */}
       <section className="space-y-3">
         <p className="text-[11px] uppercase tracking-[0.18em] text-gray-400">
-          Aurora Live Demo
+          NovaCore Live Demo
         </p>
         <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
-          See Aurora as <span className="text-purple-300">three different citizens</span>.
+          See NovaCore in <span className="text-purple-300">three different regimes</span>.
         </h1>
         <p className="text-sm md:text-base text-gray-300 max-w-2xl">
-          Bu demo, backend'e bağlı olmadan; Aurora'nın regime, NovaScore ve enforcement
+          Bu demo, backend'e bağlı olmadan; Aurora Justice Engine'in regime, NovaScore ve enforcement
           davranışını canlı olarak göstermeyi amaçlar. Soldan farklı vatandaş profillerini
           seçtiğinde, sağdaki ekran bir anda başka bir hayata dönüşür.
         </p>
@@ -179,7 +179,7 @@ export default function DemoPage() {
           <div className="grid gap-3 sm:grid-cols-2 text-xs">
             <div className="rounded-2xl border border-white/10 bg-black/70 p-3 space-y-1.5">
               <p className="text-[11px] uppercase tracking-[0.18em] text-gray-400">
-                Aurora neye izin veriyor?
+                Aurora Justice Engine neye izin veriyor?
               </p>
               <ul className="space-y-1 text-gray-300">
                 {profile.allowedActions.map((a) => (
@@ -206,7 +206,7 @@ export default function DemoPage() {
           <p className="text-[11px] text-gray-500">
             Demo boyunca; backend enforcement gerçek dünyada aynı şekilde çalışır:
             Lockdown vatandaş, bu ekranda "ghost" gördüğün butonlara tıklasa bile,
-            Aurora hem UI hem API tarafında bloklar.
+            Aurora Justice Engine hem UI hem API tarafında bloklar.
           </p>
         </div>
 
@@ -223,7 +223,7 @@ export default function DemoPage() {
                 Messaging Action (Example)
               </p>
               <p className="text-gray-300">
-                Bu, FlirtMarket/Aurora içindeki "mesaj gönder" aksiyonunun sadeleştirilmiş
+                Bu, FlirtMarket/NovaCore içindeki "mesaj gönder" aksiyonunun sadeleştirilmiş
                 bir örneği.
               </p>
               <DemoActionButton profile={profile} action="SEND_MESSAGE" />
@@ -239,11 +239,11 @@ export default function DemoPage() {
                 Withdraw / Topup Action (Example)
               </p>
               <p className="text-gray-300">
-                Finansal aksiyonlar, Aurora'nın en sıkı enforcement uyguladığı katmandır.
+                Finansal aksiyonlar, Aurora Justice Engine'in en sıkı enforcement uyguladığı katmandır.
               </p>
               <DemoActionButton profile={profile} action="WITHDRAW" />
               <p className="text-[11px] text-gray-500">
-                Aurora'nın DAO kontrollü policy parametreleri, hangi regime seviyesinde
+                Aurora Justice DAO'nun kontrollü policy parametreleri, hangi regime seviyesinde
                 hangi aksiyonun kapanacağını belirler.
               </p>
             </div>
@@ -252,7 +252,7 @@ export default function DemoPage() {
           <div className="rounded-2xl border border-purple-500/40 bg-purple-950/40 p-3 text-[11px] text-purple-100">
             <p className="font-medium mb-1">Pitch Note</p>
             <p>
-              Bu sayfa, Aurora'yı ilk defa gören birine şunu göstermek için tasarlandı:
+              Bu sayfa, NovaCore + Aurora Justice'i ilk defa gören birine şunu göstermek için tasarlandı:
               "Bu sadece puanlama sistemi değil; ceza, veri, politika ve UI hepsi aynı
               protokolün parçası."
             </p>

@@ -42,6 +42,7 @@ export interface PolicyParams {
   threshold_restricted: number
   threshold_lockdown: number
   onchain_block?: number | null
+  onchain_address?: string | null
   onchain_tx?: string | null
   synced_at: string
 }

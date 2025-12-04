@@ -5,5 +5,10 @@
   "workspaces": [
     "packages/*",
     "apps/*"
-  ]
+  ],
+  "dependencies": {
+    "@formatjs/intl": "^3.1.8",
+    "@formatjs/intl-localematcher": "^0.6.2",
+    "next-intl": "^4.5.7"
+  }
 }

@@ -138,3 +138,24 @@ class AdminViolationListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+# ============ Appeal System ============
+class AppealCreate(BaseModel):
+    """Appeal request for rejected task submission."""
+    submission_id: int = Field(..., description="Task submission ID to appeal")
+    reason: str = Field(..., min_length=10, max_length=500, description="Appeal reason (min 10 chars)")
+
+
+class AppealResponse(BaseModel):
+    """Appeal response."""
+    id: int
+    submission_id: int
+    user_id: str
+    reason: str
+    status: str = "pending"  # "pending", "approved", "rejected"
+    appeal_fee_paid: bool = False
+    created_at: datetime
+    reviewed_at: Optional[datetime] = None
+    reviewed_by: Optional[int] = None
+    review_notes: Optional[str] = None

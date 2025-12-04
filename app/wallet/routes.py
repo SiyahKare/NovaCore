@@ -123,10 +123,10 @@ async def transfer(
     Transfer NCR to another user.
     
     **Enforcement:** This action is checked against the user's CP regime.
-    LOCKDOWN users cannot transfer funds.
+    RESTRICTED and LOCKDOWN users cannot transfer funds.
     """
     # Aurora Justice Enforcement Check
-    from app.justice.router import get_justice_service, JusticeService
+    from app.justice.router import JusticeService
     from app.justice.enforcement import check_action_allowed
     from app.justice.policy import Action
     

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import {  } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { NovaScoreCard, RegimeBadge } from '@aurora/ui'
 import { useAuroraEvents } from '@aurora/hooks'
@@ -34,7 +35,7 @@ export default function NovaScoreModulePage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="text-xs uppercase tracking-[0.2em] text-purple-300">
-            Aurora Academy · Core Module
+            NovaCore Academy · Core Module
           </div>
           <h1 className="text-2xl md:text-3xl font-semibold mt-1">NovaScore & CP Sistemi</h1>
         </div>
@@ -48,9 +49,8 @@ export default function NovaScoreModulePage() {
 
       <section className="space-y-3 text-sm text-gray-300">
         <p>
-          <strong>NovaScore</strong>, Aurora'nın seni nasıl gördüğünün sayısal ifadesi. Bu skor,
-          davranışların, katkıların, ihlallerin ve sistem içindeki hareketlerinin birleşik bir
-          ölçüsü.
+          <strong>NovaScore</strong>, Aurora Justice Engine'in seni nasıl gördüğünün sayısal ifadesi. Bu skor,
+          davranışların, katkıların, ihlallerin ve sistem içindeki hareketlerinin birleşik bir ölçüsüdür.
         </p>
         <p>
           Skor 5 ana bileşenden oluşur: <strong>ECO</strong> (Ekonomi), <strong>REL</strong>{' '}

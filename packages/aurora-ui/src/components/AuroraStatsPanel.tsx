@@ -41,6 +41,22 @@ interface ViolationBreakdown {
   TRUST: number
 }
 
+interface AppealStats {
+  total_appeals: number
+  approved_count: number
+  rejected_count: number
+  pending_count: number
+  approval_rate: number
+  rejection_rate: number
+}
+
+interface JusticeOverviewMetrics {
+  pending_hitl_count: number
+  appeal_stats: AppealStats
+  ncr_burn_total: number
+  ncr_burn_last_24h: number
+}
+
 interface AuroraStats {
   total_consent_records: number
   total_privacy_profiles: number
@@ -54,6 +70,7 @@ interface AuroraStats {
   average_cp: number
   regime_distribution: RegimeDistribution
   lockdown_users_count: number
+  justice_overview?: JusticeOverviewMetrics
   generated_at: string
 }
 
@@ -294,6 +311,96 @@ export const AuroraStatsPanel: React.FC<AuroraStatsPanelProps> = ({
           })}
         </div>
       </div>
+
+      {/* Justice Overview Metrics (NasipCourt DAO v1.0) */}
+      {stats.justice_overview && (
+        <div className="bg-gradient-to-br from-purple-900/30 to-indigo-900/30 border border-purple-700/50 rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-purple-200">
+                👑 Justice Overview - NasipCourt DAO v1.0
+              </h3>
+              <p className="text-xs text-purple-400/70 mt-1">
+                Sistem sağlığı ve adalet kalitesi metrikleri
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Pending HITL Count */}
+            <div className="bg-slate-900/80 border border-purple-600/30 rounded-xl p-4">
+              <div className="text-xs text-purple-300 mb-1">Pending HITL (Gri Alan)</div>
+              <div className="text-2xl font-bold text-yellow-400">
+                {stats.justice_overview.pending_hitl_count}
+              </div>
+              <div className="text-xs text-slate-400 mt-1">
+                DAO Validator iş yükü
+              </div>
+            </div>
+
+            {/* Appeal Approval Rate */}
+            <div className="bg-slate-900/80 border border-purple-600/30 rounded-xl p-4">
+              <div className="text-xs text-purple-300 mb-1">Appeal Onay Oranı</div>
+              <div className="text-2xl font-bold text-emerald-400">
+                {stats.justice_overview.appeal_stats.approval_rate.toFixed(1)}%
+              </div>
+              <div className="text-xs text-slate-400 mt-1">
+                {stats.justice_overview.appeal_stats.approved_count} /{' '}
+                {stats.justice_overview.appeal_stats.approved_count +
+                  stats.justice_overview.appeal_stats.rejected_count}{' '}
+                onaylandı
+              </div>
+            </div>
+
+            {/* Appeal Rejection Rate */}
+            <div className="bg-slate-900/80 border border-purple-600/30 rounded-xl p-4">
+              <div className="text-xs text-purple-300 mb-1">Appeal Red Oranı</div>
+              <div className="text-2xl font-bold text-red-400">
+                {stats.justice_overview.appeal_stats.rejection_rate.toFixed(1)}%
+              </div>
+              <div className="text-xs text-slate-400 mt-1">
+                {stats.justice_overview.appeal_stats.rejected_count} reddedildi
+              </div>
+            </div>
+
+            {/* NCR Burn Total */}
+            <div className="bg-slate-900/80 border border-purple-600/30 rounded-xl p-4">
+              <div className="text-xs text-purple-300 mb-1">Toplam NCR Burn</div>
+              <div className="text-2xl font-bold text-orange-400">
+                {stats.justice_overview.ncr_burn_total.toLocaleString('tr-TR', {
+                  maximumFractionDigits: 0,
+                })}
+              </div>
+              <div className="text-xs text-slate-400 mt-1">
+                Son 24h: {stats.justice_overview.ncr_burn_last_24h.toFixed(2)} NCR
+              </div>
+            </div>
+          </div>
+
+          {/* Appeal Stats Detail */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3">
+              <div className="text-xs text-slate-400 mb-1">Toplam Appeal</div>
+              <div className="text-lg font-semibold text-slate-200">
+                {stats.justice_overview.appeal_stats.total_appeals}
+              </div>
+            </div>
+            <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3">
+              <div className="text-xs text-slate-400 mb-1">Pending Appeal</div>
+              <div className="text-lg font-semibold text-yellow-400">
+                {stats.justice_overview.appeal_stats.pending_count}
+              </div>
+            </div>
+            <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3">
+              <div className="text-xs text-slate-400 mb-1">Karara Bağlanan</div>
+              <div className="text-lg font-semibold text-slate-200">
+                {stats.justice_overview.appeal_stats.approved_count +
+                  stats.justice_overview.appeal_stats.rejected_count}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

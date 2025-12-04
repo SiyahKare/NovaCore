@@ -9,7 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.consent.models import ConsentRecord, UserPrivacyProfile
-from app.justice.models import ViolationLog, UserCpState
+from app.justice.models import ViolationLog, UserCpState, TaskAppeal
+from app.justice.nasipcourt_models import RiskEvent
+from app.wallet.models import LedgerEntry, LedgerEntryType
 
 
 class RegimeDistribution(BaseModel):
@@ -29,6 +31,24 @@ class ViolationBreakdown(BaseModel):
     TRUST: int = 0
 
 
+class AppealStats(BaseModel):
+    """Appeal statistics."""
+    total_appeals: int = 0
+    approved_count: int = 0
+    rejected_count: int = 0
+    pending_count: int = 0
+    approval_rate: float = 0.0  # approved / (approved + rejected)
+    rejection_rate: float = 0.0  # rejected / (approved + rejected)
+
+
+class JusticeOverviewMetrics(BaseModel):
+    """Justice Overview specific metrics for monitoring."""
+    pending_hitl_count: int = 0  # Pending HITL violations (Gri Alan)
+    appeal_stats: AppealStats
+    ncr_burn_total: float = 0.0  # Total NCR burned (AbuseGuard enforcement)
+    ncr_burn_last_24h: float = 0.0  # NCR burned in last 24h
+
+
 class AuroraStatsResponse(BaseModel):
     """Aurora Justice Stack statistics."""
     # Consent & Privacy
@@ -46,6 +66,9 @@ class AuroraStatsResponse(BaseModel):
     average_cp: float
     regime_distribution: RegimeDistribution
     lockdown_users_count: int
+    
+    # Justice Overview Metrics (NasipCourt DAO v1.0)
+    justice_overview: JusticeOverviewMetrics
     
     # NovaScore (if available)
     users_with_nova_score: Optional[int] = None
@@ -165,6 +188,89 @@ class AuroraStatsService:
         )
         lockdown_users_count = lockdown_count_result.scalar() or 0
         
+        # ============ Justice Overview Metrics ============
+        # 1. Pending HITL Count (Gri Alan: score_ai 40-69, status=hitl)
+        pending_hitl_result = await self.session.execute(
+            select(func.count(RiskEvent.id)).where(
+                and_(
+                    RiskEvent.status == "hitl",
+                    RiskEvent.score_ai >= 40.0,
+                    RiskEvent.score_ai < 70.0
+                )
+            )
+        )
+        pending_hitl_count = pending_hitl_result.scalar() or 0
+        
+        # 2. Appeal Statistics
+        appeal_total_result = await self.session.execute(
+            select(func.count(TaskAppeal.id))
+        )
+        total_appeals = appeal_total_result.scalar() or 0
+        
+        appeal_approved_result = await self.session.execute(
+            select(func.count(TaskAppeal.id)).where(
+                TaskAppeal.status == "approved"
+            )
+        )
+        approved_count = appeal_approved_result.scalar() or 0
+        
+        appeal_rejected_result = await self.session.execute(
+            select(func.count(TaskAppeal.id)).where(
+                TaskAppeal.status == "rejected"
+            )
+        )
+        rejected_count = appeal_rejected_result.scalar() or 0
+        
+        appeal_pending_result = await self.session.execute(
+            select(func.count(TaskAppeal.id)).where(
+                TaskAppeal.status == "pending"
+            )
+        )
+        pending_count = appeal_pending_result.scalar() or 0
+        
+        # Calculate approval/rejection rates
+        total_decided = approved_count + rejected_count
+        approval_rate = (approved_count / total_decided * 100.0) if total_decided > 0 else 0.0
+        rejection_rate = (rejected_count / total_decided * 100.0) if total_decided > 0 else 0.0
+        
+        appeal_stats = AppealStats(
+            total_appeals=total_appeals,
+            approved_count=approved_count,
+            rejected_count=rejected_count,
+            pending_count=pending_count,
+            approval_rate=round(approval_rate, 2),
+            rejection_rate=round(rejection_rate, 2),
+        )
+        
+        # 3. NCR Burn Statistics (AbuseGuard enforcement)
+        # Total burn (all time)
+        burn_total_result = await self.session.execute(
+            select(func.sum(LedgerEntry.amount)).where(
+                LedgerEntry.type == LedgerEntryType.BURN
+            )
+        )
+        burn_total = burn_total_result.scalar()
+        ncr_burn_total = float(burn_total) if burn_total else 0.0
+        
+        # Burn in last 24h
+        burn_24h_result = await self.session.execute(
+            select(func.sum(LedgerEntry.amount)).where(
+                and_(
+                    LedgerEntry.type == LedgerEntryType.BURN,
+                    LedgerEntry.created_at >= last_24h
+                )
+            )
+        )
+        burn_24h = burn_24h_result.scalar()
+        ncr_burn_last_24h = float(burn_24h) if burn_24h else 0.0
+        
+        justice_overview = JusticeOverviewMetrics(
+            pending_hitl_count=pending_hitl_count,
+            appeal_stats=appeal_stats,
+            ncr_burn_total=ncr_burn_total,
+            ncr_burn_last_24h=ncr_burn_last_24h,
+        )
+        
         return AuroraStatsResponse(
             total_consent_records=total_consent_records,
             total_privacy_profiles=total_privacy_profiles,
@@ -178,6 +284,7 @@ class AuroraStatsService:
             average_cp=average_cp,
             regime_distribution=regime_distribution,
             lockdown_users_count=lockdown_users_count,
+            justice_overview=justice_overview,
             generated_at=now,
         )
 

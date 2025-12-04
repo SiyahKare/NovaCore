@@ -1,6 +1,6 @@
-# Aurora Citizen Portal
+# NovaCore Citizen Portal
 
-The main citizen-facing frontend for the Aurora State Network.
+SiyahKare Cumhuriyeti vatandaşlarının kullandığı NovaCore frontend; Aurora Justice Engine bileşenlerini de içerir.
 
 ## Tech Stack
 
@@ -15,7 +15,7 @@ The main citizen-facing frontend for the Aurora State Network.
 ### Prerequisites
 
 - Node.js 18+
-- Aurora API running on `http://localhost:8000`
+- NovaCore API running on `http://localhost:8000`
 
 ### Installation
 
@@ -27,7 +27,7 @@ npm install
 cp .env.local.example .env.local
 
 # Update .env.local with your API URL
-# NEXT_PUBLIC_AURORA_API_URL=http://localhost:8000/api/v1
+# NEXT_PUBLIC_AURORA_API_URL=http://localhost:8000/api/v1 (legacy env name for NovaCore API)
 ```
 
 ### Development

@@ -91,7 +91,7 @@ NovaCore/
 │       │   └── globals.css      # Global styles
 │       ├── components/
 │       │   ├── ProtectedView.tsx
-│       │   └── AuroraNav.tsx
+│       │   └── NovaCoreNav.tsx
 │       ├── lib/
 │       │   └── auth.ts          # Auth utilities
 │       ├── package.json
@@ -322,7 +322,7 @@ app/
 ```
 apps/citizen-portal/
 ├── app/                    # Next.js App Router
-│   ├── layout.tsx         # Root layout with AuroraShell
+│   ├── layout.tsx         # Root layout with NovaCoreShell
 │   ├── page.tsx           # Landing page
 │   ├── globals.css        # Global styles (neon, glow effects)
 │   │
@@ -369,7 +369,7 @@ apps/citizen-portal/
 │
 ├── components/           # App-specific components
 │   ├── ProtectedView.tsx # Auth guard
-│   └── AuroraNav.tsx     # Navigation
+│   └── NovaCoreNav.tsx     # Navigation
 │
 └── lib/                  # Utilities
     └── auth.ts           # Auth helpers

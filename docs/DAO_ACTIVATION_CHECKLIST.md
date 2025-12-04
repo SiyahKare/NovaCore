@@ -1,4 +1,4 @@
-# Aurora DAO Activation Checklist
+# Aurora Justice DAO Activation Checklist
 
 ## 🎯 Final Activation Steps
 
@@ -282,5 +282,5 @@ curl http://localhost:8000/api/v1/justice/policy/current
 
 ---
 
-**Aurora State Network = DAO-controlled, versioned, simulated, enforced digital state.** 🖤
+**SiyahKare Republic + NovaCore = DAO-controlled, versioned, simulated, enforced digital state.** 🖤
 

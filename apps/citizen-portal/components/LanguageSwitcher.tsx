@@ -16,14 +16,25 @@ export function LanguageSwitcher() {
   const pathname = usePathname()
 
   const switchLocale = (newLocale: Locale) => {
-    // Replace the locale in the pathname
-    const segments = pathname.split('/')
-    if (segments[1] && locales.includes(segments[1] as Locale)) {
-      segments[1] = newLocale
-    } else {
-      segments.splice(1, 0, newLocale)
+    // usePathname() from next-intl returns locale-aware pathname (e.g., '/ru/academy')
+    // We need to extract the path without locale and rebuild with new locale
+    let pathWithoutLocale = pathname
+    
+    // Remove current locale prefix
+    if (pathname.startsWith(`/${locale}/`)) {
+      pathWithoutLocale = pathname.slice(`/${locale}/`.length)
+    } else if (pathname === `/${locale}` || pathname === `/${locale}/`) {
+      pathWithoutLocale = '/'
+    } else if (pathname.startsWith(`/${locale}`)) {
+      pathWithoutLocale = pathname.slice(`/${locale}`.length)
     }
-    router.push(segments.join('/'))
+    
+    // Build new absolute path with new locale
+    const newPath = pathWithoutLocale === '/' 
+      ? `/${newLocale}` 
+      : `/${newLocale}${pathWithoutLocale.startsWith('/') ? '' : '/'}${pathWithoutLocale}`
+    
+    router.push(newPath)
   }
 
   return (

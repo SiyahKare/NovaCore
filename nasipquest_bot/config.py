@@ -26,6 +26,7 @@ class BotConfig(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
+        extra = "ignore"  # Extra environment variables'ı ignore et
 
 
 config = BotConfig()
