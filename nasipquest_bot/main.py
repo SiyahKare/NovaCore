@@ -9,6 +9,8 @@ from aiogram.enums import ParseMode
 
 from .config import config
 from .handlers import router
+from .handlers_marketplace import router as marketplace_router
+from .handlers_quest_proof import router as quest_proof_router
 from .api_client import api_client
 
 # Logging setup
@@ -40,8 +42,10 @@ async def main():
     )
     dp = Dispatcher()
     
-    # Router'ı ekle
-    dp.include_router(router)
+    # Router'ları ekle (sıra önemli - daha spesifik handler'lar önce)
+    dp.include_router(quest_proof_router)  # Text handler - command'lerden önce
+    dp.include_router(marketplace_router)
+    dp.include_router(router)  # Command handler'lar
     
     try:
         # Bot'u başlat

@@ -7,10 +7,16 @@ from aiogram.filters import Command, CommandStart
 from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from aiogram.utils.markdown import bold, code
 
-from .api_client import api_client
+from .api_client import api_client, InsufficientFundsError, AlreadyPurchasedError
 from .config import config
 
 router = Router()
+
+# Citizen Quest Engine imports
+from app.quests.telegram_formatter import (
+    format_daily_quests_for_telegram,
+    format_quest_detail_for_telegram,
+)
 
 
 # --- Helper Functions ---
@@ -125,7 +131,8 @@ async def cmd_help(message: Message):
 /wallet - Cüzdan ve XP bilgisi
 
 {bold('Görevler:')}
-/tasks - Aktif görevleri listele
+/tasks - Aktif görevleri listele (Legacy)
+/quests - Günlük quest'ler (Yeni! 🎯)
 /complete <task_id> - Görevi tamamla
 
 {bold('Eventler:')}
@@ -159,7 +166,7 @@ async def cmd_profile(message: Message):
 
 @router.message(Command("tasks"))
 async def cmd_tasks(message: Message):
-    """Görev listesi."""
+    """Görev listesi (Legacy - eski task API)."""
     telegram_user_id = message.from_user.id
     
     try:
@@ -183,6 +190,98 @@ async def cmd_tasks(message: Message):
                     InlineKeyboardButton(
                         text=f"✅ {task.get('title', task.get('id'))}",
                         callback_data=f"complete_{task.get('id')}"
+                    )
+                ])
+        
+        reply_markup = InlineKeyboardMarkup(inline_keyboard=keyboard) if keyboard else None
+        
+        await message.answer(text, parse_mode="Markdown", reply_markup=reply_markup)
+    except Exception as e:
+        await message.answer(f"❌ Hata: {str(e)}")
+
+
+def format_quest(quest: dict) -> str:
+    """Quest bilgisini formatla."""
+    status_emoji = {
+        "assigned": "📌",
+        "submitted": "⏳",
+        "under_review": "🔍",
+        "approved": "✅",
+        "rejected": "❌",
+        "expired": "⏰",
+    }
+    status = quest.get("status", "assigned")
+    emoji = status_emoji.get(status, "📋")
+    
+    text = f"{emoji} {bold(quest.get('title', 'Quest'))}\n"
+    text += f"{quest.get('description', '')}\n\n"
+    
+    # Base rewards
+    base_ncr = quest.get("base_reward_ncr", 0)
+    base_xp = quest.get("base_reward_xp", 0)
+    text += f"🎁 Ödül: +{code(str(base_xp))} XP, +{code(str(base_ncr))} NCR\n"
+    
+    # Final rewards (eğer varsa)
+    final_ncr = quest.get("final_reward_ncr")
+    final_xp = quest.get("final_reward_xp")
+    if final_ncr is not None and final_xp is not None:
+        text += f"💰 Final: +{code(str(final_xp))} XP, +{code(str(final_ncr))} NCR\n"
+    
+    # Status
+    status_text = {
+        "assigned": "Atandı - Başla!",
+        "submitted": "Gönderildi - Onay bekleniyor",
+        "under_review": "İncelemede - DAO kontrolü",
+        "approved": "Onaylandı - Ödül verildi",
+        "rejected": "Reddedildi",
+        "expired": "Süresi doldu",
+    }
+    text += f"📊 Durum: {status_text.get(status, status)}\n"
+    
+    # Expires at
+    if quest.get("expires_at"):
+        text += f"⏱️ Bitiş: {quest.get('expires_at')}\n"
+    
+    return text
+
+
+@router.message(Command("quests"))
+async def cmd_quests(message: Message):
+    """Günlük quest'leri getir (Production-Ready Quest Engine)."""
+    telegram_user_id = message.from_user.id
+    
+    try:
+        quests_data = await api_client.get_quests(telegram_user_id)
+        quests = quests_data.get("quests", [])
+        total_available = quests_data.get("total_available", 0)
+        
+        if not quests:
+            await message.answer(
+                f"{bold('📚 Günlük Questler')}\n\n"
+                "Şu an aktif quest yok. Yarın tekrar dene! 🎯",
+                parse_mode="Markdown"
+            )
+            return
+        
+        text = f"{bold('📚 Günlük Questler')}\n\n"
+        text += f"Toplam {code(str(total_available))} quest mevcut\n\n"
+        
+        # Quest'leri listele
+        for idx, quest in enumerate(quests, 1):
+            text += f"{code(f'{idx}.')} {format_quest(quest)}\n"
+        
+        # Inline keyboard ile quest seçimi
+        keyboard = []
+        for quest in quests:
+            if quest.get("status") == "assigned":
+                quest_uuid = quest.get("quest_uuid")
+                title = quest.get("title", "Quest")
+                # Kısa başlık (max 30 karakter)
+                short_title = title[:27] + "..." if len(title) > 30 else title
+                keyboard.append([
+                    InlineKeyboardButton(
+                        text=f"🎯 {short_title}",
+                        callback_data=f"quest_select_{quest_uuid}"
                     )
                 ])
         
@@ -447,3 +546,277 @@ async def callback_join_event(callback: CallbackQuery):
     except Exception as e:
         await callback.answer(f"❌ Hata: {str(e)}", show_alert=True)
 
+
+
+@router.callback_query(F.data.startswith("quest_select_"))
+async def callback_quest_select(callback: CallbackQuery):
+    """Quest seçimi callback - proof gönderme ekranına yönlendir."""
+    await callback.answer()
+    
+    quest_uuid = callback.data.replace("quest_select_", "")
+    telegram_user_id = callback.from_user.id
+    
+    try:
+        # Quest detaylarını getir
+        quests_data = await api_client.get_quests(telegram_user_id)
+        quests = quests_data.get("quests", [])
+        
+        quest = None
+        for q in quests:
+            if q.get("quest_uuid") == quest_uuid:
+                quest = q
+                break
+        
+        if not quest:
+            await callback.message.edit_text("❌ Quest bulunamadı.")
+            return
+        
+        # Proof gönderme talimatları
+        proof_type = quest.get("proof_type") or "text"
+        text = f"{bold('📝 Quest: ' + quest.get('title', 'Quest'))}\n\n"
+        text += f"{quest.get('description', '')}\n\n"
+        text += f"🎁 Ödül: +{code(str(quest.get('base_reward_xp', 0)))} XP, +{code(str(quest.get('base_reward_ncr', 0)))} NCR\n\n"
+        
+        if proof_type == "text":
+            text += "💬 Bu quest için metin göndermen gerekiyor.\n"
+            text += "Aşağıdaki butona tıklayarak quest'i tamamlayabilirsin.\n"
+        elif proof_type == "photo":
+            text += "📸 Bu quest için fotoğraf göndermen gerekiyor.\n"
+            text += "Fotoğraf göndererek quest'i tamamlayabilirsin.\n"
+        else:
+            text += "📎 Bu quest için kanıt göndermen gerekiyor.\n"
+            text += "Kanıt göndererek quest'i tamamlayabilirsin.\n"
+        
+        # Basit proof gönderme butonu
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(
+                text="✅ Quest'i Tamamla",
+                callback_data=f"quest_submit_{quest_uuid}_{proof_type}"
+            )
+        ]])
+        
+        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+    except Exception as e:
+        await callback.message.edit_text(f"❌ Hata: {str(e)}")
+
+
+@router.callback_query(F.data.startswith("quest_submit_"))
+async def callback_quest_submit(callback: CallbackQuery):
+    """Quest proof gönderme callback."""
+    await callback.answer("Quest gönderiliyor...")
+    
+    parts = callback.data.split("_")
+    quest_uuid = parts[2] if len(parts) > 2 else None
+    proof_type = parts[3] if len(parts) > 3 else "text"
+    
+    if not quest_uuid:
+        await callback.message.edit_text("❌ Quest UUID bulunamadı.")
+        return
+    
+    telegram_user_id = callback.from_user.id
+    
+    try:
+        # Basit text proof gönder
+        result = await api_client.submit_quest(
+            telegram_user_id=telegram_user_id,
+            quest_uuid=quest_uuid,
+            proof_type=proof_type,
+            proof_payload_ref=f"telegram_callback_{callback.id}",
+            ai_score=None,  # Bot tarafında AI scoring yok, backend'de yapılacak
+        )
+        
+        # Response'dan bilgi al
+        status = result.get("status", "unknown")
+        final_reward_ncr = result.get("final_reward_ncr")
+        final_reward_xp = result.get("final_reward_xp")
+        
+        if status == "approved":
+            text = f"{bold('✅ Quest Onaylandı!')}\n\n"
+            if final_reward_ncr and final_reward_xp:
+                text += f"💰 Ödül: +{code(str(final_reward_xp))} XP, +{code(str(final_reward_ncr))} NCR\n"
+            text += f"🎉 Tebrikler! Quest başarıyla tamamlandı."
+        elif status == "submitted":
+            text = f"{bold('⏳ Quest Gönderildi')}\n\n"
+            text += "Quest'in onaylanması bekleniyor. Kısa süre içinde sonuç alacaksın!"
+        elif status == "under_review":
+            text = f"{bold('🔍 Quest İncelemede')}\n\n"
+            text += "Quest DAO tarafından inceleniyor. Sonuç yakında bildirilecek."
+        else:
+            text = f"{bold('📋 Quest Durumu')}\n\n"
+            text += f"Durum: {code(status)}"
+        
+        await callback.message.edit_text(text, parse_mode="Markdown")
+    except Exception as e:
+        await callback.message.edit_text(f"❌ Hata: {str(e)}")
+
+
+# =============================================================================
+# CITIZEN QUEST ENGINE - Telegram Komutları
+# =============================================================================
+
+@router.message(Command("tasks"))
+@router.message(Command("görevler"))
+async def cmd_tasks(message: Message):
+    """
+    /tasks veya /görevler - Bugünün görev listesi
+    
+    Citizen Quest Engine - MVP Pack V1 görevlerini gösterir.
+    """
+    telegram_user_id = message.from_user.id
+    
+    try:
+        # Günlük quest'leri getir
+        result = await api_client.get_quests_today(telegram_user_id)
+        quests = result.get("quests", []) if isinstance(result, dict) else result
+        
+        if not quests:
+            await message.answer(
+                "📋 Bugün için henüz görev yok.\n"
+                "Görevler oluşturuluyor...",
+            )
+            return
+        
+        # Quest'leri RuntimeQuest formatına çevir (formatting için)
+        from app.quests.factory import RuntimeQuest
+        runtime_quests = []
+        for q in quests:
+            runtime_quests.append(
+                RuntimeQuest(
+                    uuid=q.get("quest_uuid", ""),
+                    type=q.get("quest_type", "reflection"),
+                    key=q.get("key", ""),
+                    title=q.get("title", "Quest"),
+                    description=q.get("description", ""),
+                    base_ncr=q.get("base_reward_ncr", 0.0),
+                    base_xp=q.get("base_reward_xp", 0),
+                )
+            )
+        
+        # Telegram formatına çevir
+        formatted = format_daily_quests_for_telegram(runtime_quests)
+        
+        # Inline keyboard ile quest seçimi
+        keyboard_buttons = []
+        for idx, quest in enumerate(quests[:5], 1):  # İlk 5 quest
+            quest_uuid = quest.get("quest_uuid", "")
+            title_short = quest.get("title", "Quest")[:30]
+            keyboard_buttons.append([
+                InlineKeyboardButton(
+                    text=f"{idx}. {title_short}",
+                    callback_data=f"quest_select_{quest_uuid}"
+                )
+            ])
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+        
+        await message.answer(formatted, parse_mode="Markdown", reply_markup=keyboard)
+    
+    except Exception as e:
+        await message.answer(f"❌ Hata: {str(e)}")
+
+
+@router.message(Command("complete"))
+async def cmd_complete(message: Message):
+    """
+    /complete <quest_uuid> - Quest proof gönderme
+    
+    Kullanım: /complete <quest_uuid>
+    Örnek: /complete abc-123-def-456
+    """
+    telegram_user_id = message.from_user.id
+    command_parts = message.text.split()
+    
+    if len(command_parts) < 2:
+        await message.answer(
+            "📝 Kullanım: /complete <quest_uuid>\n\n"
+            "Quest UUID'yi görmek için /tasks komutunu kullan."
+        )
+        return
+    
+    quest_uuid = command_parts[1]
+    
+    try:
+        # Proof gönder (text olarak mesajın geri kalanı)
+        proof_text = " ".join(command_parts[2:]) if len(command_parts) > 2 else "completed_via_command"
+        
+        result = await api_client.submit_quest(
+            telegram_user_id=telegram_user_id,
+            quest_uuid=quest_uuid,
+            proof_type="text",
+            proof_payload_ref=f"telegram_cmd_{message.message_id}",
+            proof_content=proof_text,
+            message_id=str(message.message_id),
+            ai_score=None,
+        )
+        
+        status = result.get("status", "unknown")
+        final_reward_ncr = result.get("final_reward_ncr")
+        final_reward_xp = result.get("final_reward_xp")
+        
+        if status == "approved":
+            text = f"{bold('✅ Quest Onaylandı!')}\n\n"
+            if final_reward_ncr and final_reward_xp:
+                text += f"💰 Ödül: +{code(str(final_reward_xp))} XP, +{code(str(final_reward_ncr))} NCR\n"
+            text += f"🎉 Tebrikler!"
+        elif status == "submitted":
+            text = f"{bold('⏳ Quest Gönderildi')}\n\n"
+            text += "Quest'in onaylanması bekleniyor."
+        else:
+            text = f"📋 Quest Durumu: {code(status)}"
+        
+        await message.answer(text, parse_mode="Markdown")
+    
+    except Exception as e:
+        await message.answer(f"❌ Hata: {str(e)}")
+
+
+@router.message(Command("earnings"))
+async def cmd_earnings(message: Message):
+    """
+    /earnings - NCR kazançları
+    
+    Son 7 günlük NCR kazançlarını gösterir.
+    """
+    telegram_user_id = message.from_user.id
+    
+    try:
+        # Wallet balance ve transaction history getir
+        wallet_data = await api_client.get_wallet(telegram_user_id)
+        balance = wallet_data.get("balance", 0.0)
+        
+        # Son işlemler (quest ödülleri)
+        transactions = wallet_data.get("recent_transactions", [])
+        
+        # Quest ödüllerini filtrele
+        quest_earnings = [
+            t for t in transactions
+            if t.get("source") == "quest_reward" and t.get("amount", 0) > 0
+        ]
+        
+        # Son 7 günlük toplam
+        from datetime import datetime, timedelta
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        
+        total_7d = sum(
+            t.get("amount", 0) for t in quest_earnings
+            if datetime.fromisoformat(t.get("created_at", "").replace("Z", "+00:00")) > seven_days_ago
+        )
+        
+        text = f"{bold('💰 NCR Kazançları')}\n\n"
+        text += f"💵 Toplam Bakiye: {code(str(balance))} NCR\n"
+        text += f"📅 Son 7 Gün: {code(str(total_7d))} NCR\n\n"
+        
+        if quest_earnings:
+            text += f"{bold('Son Quest Ödülleri:')}\n"
+            for t in quest_earnings[:5]:  # Son 5 ödül
+                amount = t.get("amount", 0)
+                created_at = t.get("created_at", "")[:10]  # Sadece tarih
+                text += f"  • {code(str(amount))} NCR ({created_at})\n"
+        else:
+            text += "Henüz quest ödülü yok.\n"
+            text += "Görevleri tamamlamak için /tasks komutunu kullan."
+        
+        await message.answer(text, parse_mode="Markdown")
+    
+    except Exception as e:
+        await message.answer(f"❌ Hata: {str(e)}")

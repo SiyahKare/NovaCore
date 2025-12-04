@@ -1,336 +1,257 @@
 """
-NovaCore Agency Routes
+Agency Routes - Aurora Panel için Viral Asset API
 """
+from typing import List, Optional
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, HTTPException, status
+from pydantic import BaseModel, Field
+from sqlalchemy import and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
-from app.agency.models import OperatorRole
-from app.agency.schemas import (
-    AgencyCreate,
-    AgencyResponse,
-    AgencyUpdate,
-    AgencyWithStats,
-    OperatorAdd,
-    OperatorResponse,
-    OperatorUpdate,
-    PerformerCreate,
-    PerformerResponse,
-    PerformerUpdate,
-    RevenueSplit,
-)
-from app.agency.service import AgencyService
 from app.core.db import get_session
-from app.core.security import get_current_user
+from app.core.security import get_admin_user, get_current_user_optional
+from app.core.logging import get_logger
 from app.identity.models import User
+from app.core.config import settings
+from typing import Optional
+from app.agency.models import CreatorAsset, CreatorAssetStatus, AssetMediaType
+from app.agency.services.revenue_share_service import RevenueShareService
 
-router = APIRouter(prefix="/api/v1", tags=["agency"])
+logger = get_logger("agency")
+
+router = APIRouter(prefix="/api/v1/agency", tags=["agency"])
 
 
-# ============ Agency Endpoints ============
 @router.get(
-    "/agency/my",
-    response_model=AgencyWithStats,
-    summary="My Agency",
-    description="Get current user's agency with stats.",
+    "/assets/viral",
+    response_model=List[CreatorAsset],
+    summary="Ajans için seçilmiş viral içerik havuzunu getir",
 )
-async def get_my_agency(
-    current_user: User = Depends(get_current_user),
+async def list_viral_assets(
+    limit: int = Query(50, ge=1, le=200),
+    media_type: Optional[AssetMediaType] = Query(None),
+    only_available: bool = Query(True, description="Kampanyada kullanılmamış olsun"),
+    min_score: float = Query(90.0, ge=0.0, le=100.0, description="Minimum AI score"),
     session: AsyncSession = Depends(get_session),
-) -> AgencyWithStats:
-    """Get current user's owned agency."""
-    service = AgencyService(session)
-    agency = await service.get_user_agency(current_user.id)
+    current_user: Optional[User] = Depends(get_current_user_optional),  # Optional auth for dev
+):
+    """
+    AURORA CONTACT dashboard'u bu endpoint üzerinden:
+    
+    - Kullanıma hazır "ajanslık" içerikleri görür
+    - Filtreleyip, kampanyaya atar
+    
+    Development mode'da token opsiyonel, production'da admin token gerekli.
+    """
+    # Production'da admin kontrolü
+    if settings.is_prod and (not current_user or not current_user.is_admin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    stmt = select(CreatorAsset).where(
+        CreatorAsset.status.in_(
+            [CreatorAssetStatus.CURATED, CreatorAssetStatus.APPROVED]
+        )
+    )
+    
+    if only_available:
+        stmt = stmt.where(CreatorAsset.used_in_campaign == False)  # noqa: E712
+    
+    if media_type:
+        stmt = stmt.where(CreatorAsset.media_type == media_type)
+    
+    stmt = stmt.where(CreatorAsset.ai_total_score >= min_score)
+    
+    stmt = stmt.order_by(CreatorAsset.ai_total_score.desc())
+    stmt = stmt.limit(limit)
+    
+    result = await session.execute(stmt)
+    assets = result.scalars().all()
+    
+    return list(assets)
 
-    if not agency:
+
+@router.patch(
+    "/assets/{asset_id}/use",
+    response_model=CreatorAsset,
+    summary="Asset'i kampanyada kullan",
+)
+async def use_asset_in_campaign(
+    asset_id: int,
+    client_id: Optional[int] = Query(None, description="Agency client ID"),
+    session: AsyncSession = Depends(get_session),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    """
+    Asset'i kampanyada kullanıldı olarak işaretle.
+    
+    Development mode'da token opsiyonel, production'da admin token gerekli.
+    """
+    # Production'da admin kontrolü
+    if settings.is_prod and (not current_user or not current_user.is_admin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    result = await session.execute(
+        select(CreatorAsset).where(CreatorAsset.id == asset_id)
+    )
+    asset = result.scalar_one_or_none()
+    
+    if not asset:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="You don't have an agency",
+            detail="Asset not found",
         )
+    
+    asset.used_in_campaign = True
+    asset.status = CreatorAssetStatus.USED_IN_CAMPAIGN
+    
+    if client_id:
+        asset.agency_client_id = client_id
+    
+    session.add(asset)
+    await session.commit()
+    await session.refresh(asset)
+    
+    return asset
 
-    return await service.get_agency_with_stats(agency.id)
+
+@router.patch(
+    "/assets/{asset_id}/approve",
+    response_model=CreatorAsset,
+    summary="Asset'i operatör onayından geçir",
+)
+async def approve_asset(
+    asset_id: int,
+    session: AsyncSession = Depends(get_session),
+    _admin: User = Depends(get_admin_user),
+):
+    """Asset'i operatör onayından geçir."""
+    result = await session.execute(
+        select(CreatorAsset).where(CreatorAsset.id == asset_id)
+    )
+    asset = result.scalar_one_or_none()
+    
+    if not asset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Asset not found",
+        )
+    
+    asset.status = CreatorAssetStatus.APPROVED
+    session.add(asset)
+    await session.commit()
+    await session.refresh(asset)
+    
+    return asset
+
+
+@router.patch(
+    "/assets/{asset_id}/feature",
+    response_model=CreatorAsset,
+    summary="Asset'i featured yap",
+)
+async def feature_asset(
+    asset_id: int,
+    is_featured: bool = Query(True),
+    session: AsyncSession = Depends(get_session),
+    _admin: User = Depends(get_admin_user),
+):
+    """Asset'i featured yap veya kaldır."""
+    result = await session.execute(
+        select(CreatorAsset).where(CreatorAsset.id == asset_id)
+    )
+    asset = result.scalar_one_or_none()
+    
+    if not asset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Asset not found",
+        )
+    
+    asset.is_featured = is_featured
+    session.add(asset)
+    await session.commit()
+    await session.refresh(asset)
+    
+    return asset
+
+
+class CampaignRevenueRequest(BaseModel):
+    """Kampanya gelir kaydı request."""
+    revenue: float = Field(gt=0, description="Toplam fiat geliri (TRY)")
+    fiat_currency: str = Field(default="TRY", description="Para birimi")
+
+
+class RevenueShareResponse(BaseModel):
+    """Revenue share dağıtım sonucu."""
+    success: bool
+    message: str
+    creator_ncr_paid: float
+    creator_fiat_share: float
+    treasury_fiat: float
+    agency_operations_fiat: float
+    total_fiat_processed: float
+    ncr_price_try: float
 
 
 @router.post(
-    "/agency",
-    response_model=AgencyResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Create Agency",
-    description="Create a new agency (become an agency owner).",
+    "/assets/{asset_id}/record-revenue",
+    response_model=RevenueShareResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Kampanya Gelirini Kaydet ve Paylaştır",
 )
-async def create_agency(
-    data: AgencyCreate,
-    current_user: User = Depends(get_current_user),
+async def record_campaign_revenue(
+    asset_id: int,
+    payload: CampaignRevenueRequest,
     session: AsyncSession = Depends(get_session),
-) -> AgencyResponse:
-    """Create new agency."""
-    service = AgencyService(session)
-
-    # Check if user already has an agency
-    existing = await service.get_user_agency(current_user.id)
-    if existing:
+    _admin: User = Depends(get_admin_user),  # Admin yetkisi zorunlu
+):
+    """
+    Belirli bir CreatorAsset'ten elde edilen fiat geliri kaydeder ve
+    paylaşım kurallarına göre (20/40/40) Creator'a NCR ödemesi yapar.
+    
+    - Creator: %20 (NCR olarak)
+    - Treasury: %40 (Fiat)
+    - Agency Operations: %40 (Fiat)
+    """
+    if payload.revenue <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You already own an agency",
+            detail="Gelir pozitif olmalıdır.",
         )
-
-    return await service.create_agency(current_user.id, data)
-
-
-@router.get(
-    "/agency/{agency_id}",
-    response_model=AgencyWithStats,
-    summary="Get Agency",
-    description="Get agency by ID with stats.",
-)
-async def get_agency(
-    agency_id: int,
-    session: AsyncSession = Depends(get_session),
-) -> AgencyWithStats:
-    """Get agency by ID."""
-    service = AgencyService(session)
-    return await service.get_agency_with_stats(agency_id)
-
-
-@router.patch(
-    "/agency/{agency_id}",
-    response_model=AgencyResponse,
-    summary="Update Agency",
-    description="Update agency (owner/patronice only).",
-)
-async def update_agency(
-    agency_id: int,
-    data: AgencyUpdate,
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-) -> AgencyResponse:
-    """Update agency."""
-    service = AgencyService(session)
-
-    # Check access
-    await service.check_operator_access(
-        current_user.id,
-        agency_id,
-        [OperatorRole.PATRONICE],
-    )
-
-    agency = await service.get_agency(agency_id)
-    if not agency:
+    
+    try:
+        share_service = RevenueShareService(session)
+        results = await share_service.distribute_campaign_revenue(
+            asset_id=asset_id,
+            total_fiat_revenue=Decimal(str(payload.revenue)),
+            fiat_currency=payload.fiat_currency,
+        )
+        
+        return RevenueShareResponse(
+            success=True,
+            message="Gelir dağıtımı başarıyla tamamlandı.",
+            creator_ncr_paid=float(results["creator_ncr"]),
+            creator_fiat_share=float(results["creator_fiat"]),
+            treasury_fiat=float(results["treasury_fiat"]),
+            agency_operations_fiat=float(results["agency_operations_fiat"]),
+            total_fiat_processed=float(results["total_fiat_processed"]),
+            ncr_price_try=float(results["ncr_price_try"]),
+        )
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Agency not found",
+            detail=str(e),
         )
-
-    return await service.update_agency(agency, data)
-
-
-# ============ Operator Endpoints ============
-@router.get(
-    "/agency/{agency_id}/operators",
-    response_model=list[OperatorResponse],
-    summary="List Operators",
-    description="List agency operators.",
-)
-async def list_operators(
-    agency_id: int,
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-) -> list[OperatorResponse]:
-    """List agency operators."""
-    service = AgencyService(session)
-
-    # Check access
-    await service.check_operator_access(current_user.id, agency_id)
-
-    return await service.get_operators(agency_id)
-
-
-@router.post(
-    "/agency/{agency_id}/operators",
-    response_model=OperatorResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Add Operator",
-    description="Add operator to agency (patronice only).",
-)
-async def add_operator(
-    agency_id: int,
-    data: OperatorAdd,
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-) -> OperatorResponse:
-    """Add operator to agency."""
-    service = AgencyService(session)
-
-    # Check access - only patronice can add operators
-    await service.check_operator_access(
-        current_user.id,
-        agency_id,
-        [OperatorRole.PATRONICE],
-    )
-
-    return await service.add_operator(agency_id, data)
-
-
-@router.patch(
-    "/agency/{agency_id}/operators/{operator_id}",
-    response_model=OperatorResponse,
-    summary="Update Operator",
-    description="Update operator (patronice only).",
-)
-async def update_operator(
-    agency_id: int,
-    operator_id: int,
-    data: OperatorUpdate,
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-) -> OperatorResponse:
-    """Update operator."""
-    service = AgencyService(session)
-
-    await service.check_operator_access(
-        current_user.id,
-        agency_id,
-        [OperatorRole.PATRONICE],
-    )
-
-    return await service.update_operator(operator_id, data)
-
-
-# ============ Performer Endpoints ============
-@router.get(
-    "/agency/{agency_id}/performers",
-    response_model=list[PerformerResponse],
-    summary="List Performers",
-    description="List agency performers.",
-)
-async def list_performers(
-    agency_id: int,
-    session: AsyncSession = Depends(get_session),
-    active_only: bool = Query(True),
-) -> list[PerformerResponse]:
-    """List agency performers."""
-    service = AgencyService(session)
-    return await service.get_agency_performers(agency_id, active_only)
-
-
-@router.post(
-    "/agency/{agency_id}/performers",
-    response_model=PerformerResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Create Performer",
-    description="Create performer for agency.",
-)
-async def create_performer(
-    agency_id: int,
-    data: PerformerCreate,
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-) -> PerformerResponse:
-    """Create performer."""
-    service = AgencyService(session)
-
-    # Check access - patronice or manager
-    await service.check_operator_access(
-        current_user.id,
-        agency_id,
-        [OperatorRole.PATRONICE, OperatorRole.MANAGER],
-    )
-
-    return await service.create_performer(agency_id, data)
-
-
-@router.get(
-    "/performers/{performer_id}",
-    response_model=PerformerResponse,
-    summary="Get Performer",
-    description="Get performer by ID.",
-)
-async def get_performer(
-    performer_id: int,
-    session: AsyncSession = Depends(get_session),
-) -> PerformerResponse:
-    """Get performer by ID."""
-    service = AgencyService(session)
-    performer = await service.get_performer(performer_id)
-
-    if not performer:
+    except Exception as e:
+        logger = get_logger("agency")
+        logger.error(f"Revenue share error: {e}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Performer not found",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Gelir dağıtımı sırasında beklenmeyen hata.",
         )
-
-    return PerformerResponse.model_validate(performer)
-
-
-@router.get(
-    "/performers/handle/{handle}",
-    response_model=PerformerResponse,
-    summary="Get Performer by Handle",
-    description="Get performer by handle.",
-)
-async def get_performer_by_handle(
-    handle: str,
-    session: AsyncSession = Depends(get_session),
-) -> PerformerResponse:
-    """Get performer by handle."""
-    service = AgencyService(session)
-    performer = await service.get_performer_by_handle(handle)
-
-    if not performer:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Performer not found",
-        )
-
-    return PerformerResponse.model_validate(performer)
-
-
-@router.patch(
-    "/performers/{performer_id}",
-    response_model=PerformerResponse,
-    summary="Update Performer",
-    description="Update performer.",
-)
-async def update_performer(
-    performer_id: int,
-    data: PerformerUpdate,
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-) -> PerformerResponse:
-    """Update performer."""
-    service = AgencyService(session)
-
-    performer = await service.get_performer(performer_id)
-    if not performer:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Performer not found",
-        )
-
-    # Check access
-    await service.check_operator_access(
-        current_user.id,
-        performer.agency_id,
-        [OperatorRole.PATRONICE, OperatorRole.MANAGER],
-    )
-
-    return await service.update_performer(performer, data)
-
-
-# ============ Revenue Split ============
-@router.get(
-    "/performers/{performer_id}/revenue-split",
-    response_model=RevenueSplit,
-    summary="Calculate Revenue Split",
-    description="Calculate revenue split for a performer.",
-)
-async def calculate_revenue_split(
-    performer_id: int,
-    amount: Decimal = Query(..., gt=0),
-    session: AsyncSession = Depends(get_session),
-) -> RevenueSplit:
-    """Calculate revenue split for performer."""
-    service = AgencyService(session)
-    return await service.calculate_revenue_split(performer_id, amount)
-

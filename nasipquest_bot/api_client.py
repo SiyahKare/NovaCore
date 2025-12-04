@@ -165,9 +165,204 @@ class NovaCoreClient:
             data={"referral_code": referral_code}
         )
     
+    async def get_quests(self, telegram_user_id: int) -> Dict[str, Any]:
+        """Günlük quest'leri getir (legacy)."""
+        return await self.call(
+            "/api/v1/telegram/quests/today",
+            params={"telegram_user_id": telegram_user_id}
+        )
+    
+    async def get_quests_today(self, telegram_user_id: int) -> Dict[str, Any]:
+        """Günlük quest'leri getir (Citizen Quest Engine)."""
+        return await self.call(
+            "/api/v1/telegram/quests/today",
+            params={"telegram_user_id": telegram_user_id}
+        )
+    
+    async def submit_quest(
+        self,
+        telegram_user_id: int,
+        quest_uuid: str,
+        proof_type: str,
+        proof_payload_ref: str,
+        proof_content: Optional[str] = None,
+        message_id: Optional[str] = None,
+        ai_score: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """
+        Quest proof gönder.
+        
+        Args:
+            telegram_user_id: Telegram user ID
+            quest_uuid: Quest UUID
+            proof_type: text | photo | link | mixed
+            proof_payload_ref: Reference (file_id, URL, etc.)
+            proof_content: Direct text content (for text proofs)
+            message_id: Telegram message_id for tracking
+            ai_score: Optional pre-calculated AI score
+        """
+        return await self.call(
+            "/api/v1/telegram/quests/submit",
+            method="POST",
+            params={"telegram_user_id": telegram_user_id},
+            data={
+                "quest_uuid": quest_uuid,
+                "proof_type": proof_type,
+                "proof_payload_ref": proof_payload_ref,
+                "proof_content": proof_content,
+                "source": "telegram",
+                "message_id": message_id,
+                "ai_score": ai_score,
+            }
+        )
+    
+    async def get_next_assignable_quest(
+        self,
+        telegram_user_id: int,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Kullanıcının bir sonraki atanabilir quest'ini getir.
+        
+        MVP: Bugün için ASSIGNED durumunda olan ilk quest'i döndürür.
+        """
+        result = await self.call(
+            "/api/v1/telegram/quests/active",
+            params={"telegram_user_id": telegram_user_id}
+        )
+        
+        quests = result.get("quests", []) if isinstance(result, dict) else result
+        
+        # ASSIGNED durumunda olan ilk quest'i bul
+        for quest in quests:
+            if quest.get("status") == "assigned":
+                return quest
+        
+        return None
+    
+    async def get_wallet(self, telegram_user_id: int) -> Dict[str, Any]:
+        """Wallet balance ve transaction history getir."""
+        return await self.call(
+            "/api/v1/wallet/me",
+            params={"telegram_user_id": telegram_user_id}
+        )
+    
+    # --- Marketplace Methods ---
+    
+    async def list_marketplace_items(
+        self,
+        telegram_user_id: int,
+        limit: int = 10,
+        offset: int = 0,
+        item_type: Optional[str] = None,
+        min_score: Optional[float] = None,
+        status: str = "active",
+    ) -> Dict[str, Any]:
+        """
+        Marketplace item'lerini listele.
+        
+        Args:
+            telegram_user_id: Telegram user ID
+            limit: Sayfa boyutu
+            offset: Sayfa offset'i
+            item_type: Item tipi filtresi
+            min_score: Minimum AI score
+            status: Durum filtresi (default: active)
+        """
+        params = {
+            "telegram_user_id": telegram_user_id,
+            "limit": limit,
+            "offset": offset,
+            "status": status,
+        }
+        if item_type:
+            params["item_type"] = item_type
+        if min_score:
+            params["min_score"] = min_score
+        
+        return await self.call(
+            "/api/v1/marketplace/items",
+            params=params
+        )
+    
+    async def get_marketplace_item(
+        self,
+        telegram_user_id: int,
+        item_id: int,
+    ) -> Dict[str, Any]:
+        """Tek bir marketplace item getir."""
+        return await self.call(
+            f"/api/v1/marketplace/items/{item_id}",
+            params={"telegram_user_id": telegram_user_id}
+        )
+    
+    async def purchase_marketplace_item(
+        self,
+        telegram_user_id: int,
+        item_id: int,
+    ) -> Dict[str, Any]:
+        """
+        Marketplace item satın al.
+        
+        Raises:
+            InsufficientFundsError: Yetersiz bakiye
+            AlreadyPurchasedError: Zaten satın alınmış
+            Exception: Diğer hatalar
+        """
+        try:
+            return await self.call(
+                f"/api/v1/marketplace/items/{item_id}/purchase",
+                method="POST",
+                params={"telegram_user_id": telegram_user_id}
+            )
+        except Exception as e:
+            error_str = str(e)
+            if "Yetersiz bakiye" in error_str or "insufficient" in error_str.lower():
+                raise InsufficientFundsError(error_str)
+            elif "zaten satın alındı" in error_str.lower() or "already purchased" in error_str.lower():
+                raise AlreadyPurchasedError(error_str)
+            raise
+    
+    async def get_my_marketplace_items(
+        self,
+        telegram_user_id: int,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Dict[str, Any]:
+        """Kendi marketplace item'lerimi getir."""
+        return await self.call(
+            "/api/v1/marketplace/my-items",
+            params={
+                "telegram_user_id": telegram_user_id,
+                "limit": limit,
+                "offset": offset,
+            }
+        )
+    
+    async def get_my_marketplace_sales(
+        self,
+        telegram_user_id: int,
+    ) -> Dict[str, Any]:
+        """Satış istatistiklerimi getir."""
+        return await self.call(
+            "/api/v1/marketplace/my-sales",
+            params={"telegram_user_id": telegram_user_id}
+        )
+    
     async def close(self):
         """Client'ı kapat."""
         await self.client.aclose()
+
+
+# --- Marketplace Exceptions ---
+
+class InsufficientFundsError(Exception):
+    """Yetersiz bakiye hatası."""
+    pass
+
+
+class AlreadyPurchasedError(Exception):
+    """Zaten satın alınmış hatası."""
+    pass
 
 
 # Global client instance

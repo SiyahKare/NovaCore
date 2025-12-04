@@ -13,20 +13,29 @@ from app.core.logging import get_logger, setup_logging
 
 # Import routers
 from app.identity.routes import router as identity_router
+from app.identity.dev_router import router as dev_router
 from app.wallet.routes import router as wallet_router
 from app.xp_loyalty.routes import router as loyalty_router
 from app.nova_credit.routes import router as credit_router  # NovaCredit = Kalp
 from app.agency.routes import router as agency_router
 from app.events.routes import router as events_router
 from app.admin.routes import router as admin_router
+from app.admin.abuse_routes import router as admin_abuse_router
+from app.admin.economy_routes import router as admin_economy_router
 from app.treasury.routes import router as treasury_router  # Treasury = Devletin Kan Dolaşımı
 from app.consent.router import router as consent_router
 from app.nova_score.router import router as nova_score_router
 from app.justice.router import router as justice_router
+from app.justice.mod_router import router as justice_mod_router
+from app.justice.nasipcourt_router import router as nasipcourt_router
 from app.flirtmarket.routes import router as flirtmarket_router
 from app.telemetry.router import router as telemetry_router
 from app.telegram_gateway.router import router as telegram_router
 from app.admin.event_routes import router as admin_event_router
+from app.quests.router import router as quests_router, admin_router as quests_admin_router
+from app.agency.routes import router as agency_router
+from app.agency.routes_telegram import router as agency_telegram_router
+from app.marketplace.router import router as marketplace_router
 
 # Setup logging
 setup_logging()
@@ -48,10 +57,26 @@ async def lifespan(app: FastAPI):
             logger.warning("database_init_failed", error=str(e))
             logger.warning("Backend will start but database operations may fail. Start PostgreSQL with: docker-compose up -d postgres")
 
+    # Start Telethon client (Aurora Contact)
+    try:
+        from app.voice_engine.telethon_client import start_telethon_client
+        # Background task olarak başlat
+        import asyncio
+        asyncio.create_task(start_telethon_client())
+        logger.info("telethon_client_started")
+    except Exception as e:
+        logger.warning(f"telethon_client_start_failed: {e}")
+
     yield
 
     # Shutdown
     logger.info("novacore_shutting_down")
+    try:
+        from app.voice_engine.telethon_client import stop_telethon_client
+        await stop_telethon_client()
+    except Exception:
+        pass  # Ignore shutdown errors
+    
     try:
         await close_db()
     except Exception:
@@ -102,6 +127,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(identity_router)
+app.include_router(dev_router)
 app.include_router(wallet_router)
 app.include_router(treasury_router)  # Treasury - Devletin Kan Dolaşımı
 app.include_router(loyalty_router)
@@ -109,13 +135,22 @@ app.include_router(credit_router)  # NovaCredit - Davranış Skoru
 app.include_router(agency_router)
 app.include_router(events_router)
 app.include_router(admin_router)
+app.include_router(admin_abuse_router)  # Admin AbuseGuard Telemetry (Vezir Paneli)
+app.include_router(admin_economy_router)  # Admin Economy Dashboard (NasipQuest)
 app.include_router(consent_router)  # Consent - Onay ve Veri Etiği Yönetimi
 app.include_router(nova_score_router)  # NovaScore - Kullanıcı Reputasyon Skoru
 app.include_router(justice_router)  # Justice - Adalet Modülü ve CP Motoru
+app.include_router(justice_mod_router)  # Justice Mod - Ombudsman/Validator endpoints
+app.include_router(nasipcourt_router)  # NasipCourt DAO v1.0 - Justice Stack
 app.include_router(flirtmarket_router)  # FlirtMarket - Example endpoints with enforcement
 app.include_router(telemetry_router)  # Telemetry - Growth & Education Event Tracking
 app.include_router(telegram_router)  # Telegram Gateway - Bot ↔ NovaCore Bridge
 app.include_router(admin_event_router)  # Admin Event Management
+app.include_router(quests_router)  # Quest Engine - Production-Ready Quest System
+app.include_router(quests_admin_router)  # Quest Admin/Ombudsman endpoints
+app.include_router(agency_router)  # Agency - Creator → Ajans Dönüşüm Pipeline
+app.include_router(agency_telegram_router)  # Agency Telegram Dashboard API
+app.include_router(marketplace_router)  # Marketplace - SiyahKare Viral Market
 
 
 # Root endpoint

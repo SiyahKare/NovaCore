@@ -20,12 +20,12 @@ class PolicyService:
         
         Falls back to default values if no active policy exists.
         """
-        result = await self.session.exec(
+        result = await self.session.execute(
             select(JusticePolicyParams).where(
                 JusticePolicyParams.active == True
             ).order_by(JusticePolicyParams.synced_at.desc())
         )
-        policy = result.first()
+        policy = result.scalars().first()
         
         if policy is None:
             # Fallback to default policy (v1.0)
@@ -67,17 +67,12 @@ class PolicyService:
         Create a new policy version and deactivate old ones.
         """
         # Deactivate all existing policies
-        await self.session.exec(
+        existing = await self.session.execute(
             select(JusticePolicyParams).where(
                 JusticePolicyParams.active == True
             )
         )
-        existing = await self.session.exec(
-            select(JusticePolicyParams).where(
-                JusticePolicyParams.active == True
-            )
-        )
-        for old_policy in existing.all():
+        for old_policy in existing.scalars().all():
             old_policy.active = False
             self.session.add(old_policy)
         
