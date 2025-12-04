@@ -2,26 +2,14 @@
 
 ## İki Farklı Frontend Var
 
-### 1️⃣ `frontend/` - Eski Demo (Port 3000)
+### 1️⃣ `frontend/` - ⚠️ DEPRECATED
 
 **Konum:** `/frontend/`  
-**Teknoloji:** Vite + React + TypeScript  
-**Amaç:** Aurora Justice Stack demo ve test arayüzü
+**Durum:** **Kaldırıldı** - Tüm özellikler `apps/citizen-portal`'a taşındı
 
-**Özellikler:**
-- Aurora Case View (Ombudsman görünümü)
-- Aurora Stats Panel
-- Regime Badge/Banner
-- Enforcement Error Modal
-- FlirtMarket entegrasyon örneği
+**Migration:** Tüm Justice Stack component'leri ve sayfaları `apps/citizen-portal/app/admin/aurora/ombudsman/` altına taşındı.
 
-**Kullanım:**
-```bash
-cd frontend
-npm run dev  # Port 3000
-```
-
-**Durum:** Legacy - Yeni geliştirmeler için kullanılmıyor
+**Detaylar:** `docs/FRONTEND_MIGRATION.md` dosyasına bakın.
 
 ---
 
@@ -83,14 +71,15 @@ npm run dev  # Port 3001 (veya 3000 boşsa)
 
 ---
 
-## Gelecek Planı
+## ✅ Migration Tamamlandı
 
-`frontend/` dizini **migrate edilecek**:
-- Component'ler → `packages/aurora-ui`
-- Hooks → `packages/aurora-hooks`
-- App → `apps/citizen-portal` veya `apps/admin-panel`
+`frontend/` dizini **tamamen migrate edildi**:
+- ✅ Component'ler → `packages/aurora-ui`
+- ✅ Hooks → `packages/aurora-hooks`
+- ✅ Justice Stack sayfaları → `apps/citizen-portal/app/admin/aurora/ombudsman/`
+- ✅ Marketplace & Agency → `apps/citizen-portal/app/`
 
-**Öneri:** Yeni geliştirmeler için sadece `apps/citizen-portal/` kullan.
+**Durum:** `frontend/` klasörü kaldırılabilir. Artık tek kaynak: **`apps/citizen-portal`**
 
 ---
 
