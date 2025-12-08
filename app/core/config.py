@@ -80,7 +80,15 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # CORS
+    # Default: localhost (dev)
+    # Production: Cloudflare subdomain'leri (https://portal.siyahkare.com, https://app.siyahkare.com)
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    
+    # Frontend URL (for bot deep links)
+    FRONTEND_URL: str = "http://localhost:3000"
+    
+    # Backend URL (for webhooks, etc.)
+    BACKEND_URL: str = "http://localhost:8000"
 
     # Logging
     LOG_LEVEL: str = "INFO"
@@ -103,9 +111,9 @@ class Settings(BaseSettings):
         return self.ENV == "prod"
 
 
-@lru_cache
 def get_settings() -> Settings:
-    """Get cached settings instance."""
+    """Get settings instance."""
+    # Note: Removed @lru_cache to allow .env changes to be picked up without restart
     return Settings()
 
 

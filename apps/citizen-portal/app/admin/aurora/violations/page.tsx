@@ -35,7 +35,7 @@ export default function AuroraViolationsPage() {
   const handleCategoryChange = (value: string) => {
     setFilters((prev) => ({
       ...prev,
-      category: value || undefined,
+      category: (value === "" ? "" : (value as "EKO" | "COM" | "SYS" | "TRUST")) || undefined,
     }));
   };
 

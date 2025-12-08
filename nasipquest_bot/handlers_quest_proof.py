@@ -107,7 +107,7 @@ async def handle_proof_text(message: Message):
         # AbuseGuard cooldown hatası
         if "cooldown" in error_msg.lower() or "abuse" in error_msg.lower():
             await message.answer(
-                f"{bold('🚫 Hesabın Cooldown'da')}\n\n"
+                f"{bold('🚫 Hesabın Cooldown\'da')}\n\n"
                 f"Risk skorun yüksek olduğu için şu an görev tamamlayamazsın.\n"
                 f"Lütfen daha sonra tekrar dene."
             )

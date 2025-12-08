@@ -3,18 +3,126 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ConsentFlow, NovaScoreCard, RegimeBadge } from '@aurora/ui'
-import { useNovaScore, useJustice, useAuroraEvents, useConsentFlow } from '@aurora/hooks'
+import { useNovaScore, useJustice, useAuroraEvents, useConsentFlow, useCurrentCitizen } from '@aurora/hooks'
 import { setToken, getToken } from '@/lib/auth'
 import type { NovaScorePayload, CpState } from '@aurora/ui'
+
+// Telegram OAuth Types
+interface TelegramAuthResult {
+  id: number
+  first_name: string
+  last_name?: string
+  username?: string
+  photo_url?: string
+  auth_date: number
+  hash: string
+}
+
+let telegramLoginScriptPromise: Promise<void> | null = null
+
+async function ensureTelegramLoginScript() {
+  if (typeof window === 'undefined') {
+    throw new Error('Telegram doğrulaması sadece tarayıcıda başlatılabilir.')
+  }
+
+  if ((window as any).Telegram?.Login) {
+    return
+  }
+
+  if (!telegramLoginScriptPromise) {
+    telegramLoginScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.id = 'telegram-login-script'
+      script.src = 'https://telegram.org/js/telegram-widget.js?22'
+      script.async = true
+      script.onload = () => resolve()
+      script.onerror = () => {
+        telegramLoginScriptPromise = null
+        reject(new Error('Telegram doğrulama betiği yüklenemedi.'))
+      }
+      document.body.appendChild(script)
+    })
+  }
+
+  await telegramLoginScriptPromise
+
+  if (!(window as any).Telegram?.Login) {
+    throw new Error('Telegram doğrulama betiği hazır değil. Yeniden deneyin.')
+  }
+}
+
+async function requestTelegramOAuth(): Promise<TelegramAuthResult> {
+  await ensureTelegramLoginScript()
+
+  const botIdStr = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID
+  if (!botIdStr) {
+    throw new Error('Telegram bot ID tanımlı değil (NEXT_PUBLIC_TELEGRAM_BOT_ID).')
+  }
+
+  const botId = Number(botIdStr)
+  if (!botId) {
+    throw new Error('Geçersiz Telegram bot ID.')
+  }
+
+  // Origin URL'i al (production'da Cloudflare domain, dev'de localhost)
+  const origin = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : (process.env.NEXT_PUBLIC_AURORA_API_URL?.replace('/api/v1', '') || 'http://localhost:3000')
+
+  return await new Promise((resolve, reject) => {
+    const login = (window as any).Telegram?.Login
+    if (!login?.auth) {
+      reject(new Error('Telegram doğrulama arayüzü bulunamadı.'))
+      return
+    }
+
+    login.auth(
+      {
+        bot_id: botId,
+        request_access: 'write',
+        origin: origin,
+      },
+      (response: TelegramAuthResult | { error?: string } | undefined) => {
+        if (!response || (response as any).error) {
+          reject(new Error('Telegram doğrulaması iptal edildi.'))
+        } else {
+          resolve(response as TelegramAuthResult)
+        }
+      },
+    )
+  })
+}
 
 type Step = 1 | 2 | 3 | 4
 
 export default function OnboardingPage() {
   const [step, setStep] = useState<Step>(1)
   const router = useRouter()
+  const { isAuthenticated, loading } = useCurrentCitizen()
+
+  // Token varsa ve geçerliyse direkt dashboard'a yönlendir
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, loading, router])
 
   const next = () => setStep((s) => (s === 4 ? 4 : ((s + 1) as Step)))
   const back = () => setStep((s) => (s === 1 ? 1 : ((s - 1) as Step)))
+
+  // Loading durumunda göster
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-sm text-gray-400">Kimlik doğrulanıyor...</div>
+      </div>
+    )
+  }
+
+  // Zaten authenticated ise hiçbir şey gösterme (redirect olacak)
+  if (isAuthenticated) {
+    return null
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -77,10 +185,58 @@ function StepAuth({ onNext }: { onNext: () => void }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasToken, setHasToken] = useState(false)
+  const [isTelegramWebApp, setIsTelegramWebApp] = useState(false)
+  const { isAuthenticated, loading: authLoading } = useCurrentCitizen()
   
   // Check token on client-side only to avoid hydration mismatch
   useEffect(() => {
-    setHasToken(!!getToken())
+    const token = getToken()
+    setHasToken(!!token)
+    
+    // Token varsa ve geçerliyse otomatik olarak bir sonraki adıma geç
+    if (token && !authLoading && isAuthenticated) {
+      onNext()
+    }
+  }, [isAuthenticated, authLoading, onNext])
+  
+  // Telegram WebApp kontrolü
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const checkTelegram = async () => {
+        try {
+          const { loadTelegramWebAppScript, isTelegramWebApp, getTelegramUser } = await import('@/lib/telegram-webapp')
+          await loadTelegramWebAppScript()
+          const isTg = isTelegramWebApp()
+          setIsTelegramWebApp(isTg)
+          
+          // Eğer Telegram WebApp içindeyse ve kullanıcı varsa otomatik auth dene
+          if (isTg && !getToken()) {
+            const user = getTelegramUser()
+            if (user) {
+              // Otomatik auth dene
+              handleTelegramWebAppAuth()
+            }
+          }
+        } catch (err) {
+          // Telegram WebApp değil, normal web
+          setIsTelegramWebApp(false)
+        }
+      }
+      checkTelegram()
+    }
+  }, [])
+
+  // URL'den telegram_user_id parametresini kontrol et (bot'tan deep link)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !getToken()) {
+      const params = new URLSearchParams(window.location.search)
+      const telegramUserId = params.get('telegram_user_id')
+      
+      if (telegramUserId) {
+        // Bot'tan gelen deep link ile token al
+        handleTelegramLinkFromUrl(telegramUserId)
+      }
+    }
   }, [])
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -163,6 +319,155 @@ function StepAuth({ onNext }: { onNext: () => void }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleTelegramWebAppAuth = async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const { getTelegramInitData, parseTelegramInitData } = await import('@/lib/telegram-webapp')
+      const initData = getTelegramInitData()
+      
+      if (!initData) {
+        throw new Error('Telegram initData bulunamadı')
+      }
+
+      const parsed = parseTelegramInitData(initData)
+      if (!parsed || !parsed.telegram_id) {
+        throw new Error('Telegram kullanıcı bilgileri parse edilemedi')
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_AURORA_API_URL || 'http://localhost:8000/api/v1'
+      const res = await fetch(`${apiUrl}/identity/telegram/auth`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          telegram_id: parsed.telegram_id,
+          username: parsed.username,
+          first_name: parsed.first_name,
+          last_name: parsed.last_name,
+          photo_url: parsed.photo_url,
+          auth_date: parsed.auth_date,
+          hash: parsed.hash,
+        }),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ detail: 'Telegram auth hatası' }))
+        throw new Error(errorData.detail || 'Telegram ile giriş yapılamadı')
+      }
+
+      const { access_token } = await res.json()
+      setToken(access_token)
+      setHasToken(true)
+      onNext()
+    } catch (err: any) {
+      setError(err.message || 'Telegram ile otomatik giriş yapılamadı')
+      setLoading(false)
+    }
+  }
+
+  const handleTelegramLinkFromUrl = async (telegramUserId: string) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_AURORA_API_URL || 'http://localhost:8000/api/v1'
+      const res = await fetch(`${apiUrl}/dev/token/telegram?telegram_user_id=${encodeURIComponent(telegramUserId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ detail: 'Token alınamadı' }))
+        throw new Error(errorData.detail || 'Telegram kullanıcısı bulunamadı. Önce Telegram\'da /start gönderin.')
+      }
+
+      const { token } = await res.json()
+      setToken(token)
+      setHasToken(true)
+      
+      // URL'den parametreyi temizle
+      window.history.replaceState({}, '', window.location.pathname)
+      
+      onNext()
+    } catch (err: any) {
+      setError(err.message || 'Telegram kullanıcısı bulunamadı. Önce Telegram\'da /start gönderin.')
+      setLoading(false)
+    }
+  }
+
+  const handleTelegramOAuth = async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Telegram Login script'ini yükle ve OAuth widget'ını başlat
+      const authResult = await requestTelegramOAuth()
+
+      // API URL'i belirle (production'da Cloudflare domain)
+      const apiUrl = process.env.NEXT_PUBLIC_AURORA_API_URL || 
+        (typeof window !== 'undefined' && window.location.hostname.includes('siyahkare.com')
+          ? 'https://api.siyahkare.com/api/v1'
+          : 'http://localhost:8000/api/v1')
+
+      console.log('Telegram OAuth - API URL:', apiUrl)
+      console.log('Telegram OAuth - Auth Result:', authResult)
+
+      const res = await fetch(`${apiUrl}/identity/telegram/auth`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          telegram_id: authResult.id,
+          username: authResult.username,
+          first_name: authResult.first_name,
+          last_name: authResult.last_name,
+          photo_url: authResult.photo_url,
+          auth_date: authResult.auth_date,
+          hash: authResult.hash,
+        }),
+      })
+
+      console.log('Telegram OAuth - Response status:', res.status)
+
+      if (!res.ok) {
+        let errorMessage = 'Telegram ile giriş yapılamadı'
+        try {
+          const errorData = await res.json()
+          errorMessage = errorData.detail || errorData.error || errorMessage
+          console.error('Telegram OAuth - Error:', errorData)
+        } catch (parseError) {
+          const text = await res.text()
+          errorMessage = `Backend hatası (${res.status}): ${text || 'Bilinmeyen hata'}`
+          console.error('Telegram OAuth - Parse error:', parseError, 'Response text:', text)
+        }
+        throw new Error(errorMessage)
+      }
+
+      const responseData = await res.json()
+      console.log('Telegram OAuth - Success:', responseData)
+
+      if (!responseData.access_token) {
+        throw new Error('Token alınamadı. Backend response formatı beklenmedik.')
+      }
+
+      setToken(responseData.access_token)
+      setHasToken(true)
+      onNext()
+    } catch (err: any) {
+      console.error('Telegram OAuth - Exception:', err)
+      const errorMessage = err.message || 'Telegram ile giriş yapılamadı'
+      setError(errorMessage)
+      setLoading(false)
+    }
+  }
+
+  const handleTelegramLink = async () => {
+    const telegramUserId = prompt('Telegram User ID\'nizi girin (Telegram\'da /start gönderdiğinizde bot log\'larında görünür):')
+    if (!telegramUserId) return
+
+    await handleTelegramLinkFromUrl(telegramUserId)
   }
 
   return (
@@ -254,6 +559,23 @@ function StepAuth({ onNext }: { onNext: () => void }) {
               </p>
             </div>
             <span className="text-purple-400">→</span>
+          </button>
+        </div>
+
+        {/* Telegram OAuth */}
+        <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
+          <button
+            onClick={handleTelegramOAuth}
+            disabled={loading}
+            className="w-full flex items-center justify-between text-left disabled:opacity-50"
+          >
+            <div>
+              <h3 className="text-sm font-semibold text-cyan-200">🤖 Telegram Connect ile Auth</h3>
+              <p className="text-xs text-cyan-300/70 mt-1">
+                Telegram hesabın ile hızlıca giriş yap
+              </p>
+            </div>
+            <span className="text-cyan-400">→</span>
           </button>
         </div>
       </div>

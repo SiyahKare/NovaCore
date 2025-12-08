@@ -43,6 +43,59 @@ def _build_item_keyboard(item_id: int) -> InlineKeyboardMarkup:
     )
 
 
+def _format_content_for_delivery(content: str, item_type: str) -> str:
+    """
+    Content'i Telegram bot'a gönderilebilir formata çevir.
+    
+    Args:
+        content: Raw content (JSON veya plain text)
+        item_type: Item tipi (hook, caption_pack, vb.)
+    
+    Returns:
+        Formatted string
+    """
+    import json
+    
+    try:
+        parsed = json.loads(content)
+        
+        # Hook Pack formatı
+        if item_type.lower() in ["hook", "viral_hook", "vir_hook"]:
+            if isinstance(parsed, list):
+                return "\n".join([f"• {hook}" for hook in parsed])
+            elif isinstance(parsed, dict) and "hooks" in parsed:
+                return "\n".join([f"• {hook}" for hook in parsed["hooks"]])
+        
+        # Caption Pack formatı
+        elif item_type.lower() in ["caption_pack", "caption"]:
+            if isinstance(parsed, list):
+                return "\n\n---\n\n".join([f"{idx+1}. {caption}" for idx, caption in enumerate(parsed)])
+            elif isinstance(parsed, dict) and "captions" in parsed:
+                return "\n\n---\n\n".join([f"{idx+1}. {caption}" for idx, caption in enumerate(parsed["captions"])])
+        
+        # Script formatı
+        elif item_type.lower() in ["script", "story_script", "short_script"]:
+            if isinstance(parsed, dict) and "scripts" in parsed:
+                return "\n\n---\n\n".join([
+                    f"**Script {idx+1}:**\n{script}"
+                    for idx, script in enumerate(parsed["scripts"])
+                ])
+        
+        # Hashtag Set formatı
+        elif item_type.lower() in ["hashtag_set", "hashtag"]:
+            if isinstance(parsed, list):
+                return " ".join([f"#{tag.replace('#', '')}" for tag in parsed])
+            elif isinstance(parsed, dict) and "hashtags" in parsed:
+                return " ".join([f"#{tag.replace('#', '')}" for tag in parsed["hashtags"]])
+        
+        # Default: JSON'u pretty print
+        return json.dumps(parsed, indent=2, ensure_ascii=False)
+    
+    except (json.JSONDecodeError, TypeError):
+        # Plain text ise direkt döndür
+        return content
+
+
 @router.message(Command("market"))
 async def cmd_market(message: Message):
     """
@@ -149,8 +202,7 @@ async def cb_buy_item(callback: CallbackQuery):
         # Content delivery
         if content:
             # Content'i formatla ve gönder
-            from app.marketplace.delivery import format_content_for_delivery
-            formatted_content = format_content_for_delivery(content, item_type)
+            formatted_content = _format_content_for_delivery(content, item_type)
             
             await callback.message.answer(
                 f"{bold('✅ Satın alma başarılı!')}\n\n"
@@ -243,8 +295,7 @@ async def cmd_buy(message: Message):
         # Content delivery
         if content:
             # Content'i formatla ve gönder
-            from app.marketplace.delivery import format_content_for_delivery
-            formatted_content = format_content_for_delivery(content, item_type)
+            formatted_content = _format_content_for_delivery(content, item_type)
             
             await message.answer(
                 f"{bold('✅ Satın alma başarılı!')}\n\n"

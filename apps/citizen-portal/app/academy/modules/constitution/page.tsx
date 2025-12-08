@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {  } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { RecallRequest } from '@aurora/ui'
-import { useAuroraEvents } from '@aurora/hooks'
+import { useAuroraEvents, useAcademyProgress } from '@aurora/hooks'
 
 const bullets = [
   'Verinin yegâne sahibi sensin (Mutlak Sahiplik).',
@@ -17,6 +17,7 @@ const bullets = [
 export default function ConstitutionModulePage() {
   const router = useRouter()
   const { track } = useAuroraEvents()
+  const { completeModule } = useAcademyProgress()
 
   useEffect(() => {
     // Track module view
@@ -26,6 +27,16 @@ export default function ConstitutionModulePage() {
   const handleRecallRequest = (mode: 'ANONYMIZE' | 'FULL_EXCLUDE') => {
     track('recall_requested', { mode })
     console.log('Recall requested:', mode)
+  }
+
+  const handleComplete = async () => {
+    try {
+      await completeModule('constitution')
+      alert('Modül tamamlandı! 🎉')
+    } catch (err: any) {
+      console.error('Failed to mark module as completed:', err)
+      alert('Modül tamamlanırken bir hata oluştu. Lütfen tekrar deneyin.')
+    }
   }
 
   return (
@@ -93,12 +104,20 @@ export default function ConstitutionModulePage() {
         <Link href="/academy" className="hover:text-gray-200">
           ← Academy ana sayfaya dön
         </Link>
-        <button
-          onClick={() => router.push('/academy/modules/novascore')}
-          className="rounded-lg bg-purple-500 px-3 py-1.5 text-[11px] text-white font-semibold hover:bg-purple-400"
-        >
-          Sonraki ders: NovaScore & CP →
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleComplete}
+            className="rounded-lg bg-emerald-500 px-3 py-1.5 text-[11px] text-white font-semibold hover:bg-emerald-400"
+          >
+            ✓ Tamamlandı
+          </button>
+          <button
+            onClick={() => router.push('/academy/modules/novascore')}
+            className="rounded-lg bg-purple-500 px-3 py-1.5 text-[11px] text-white font-semibold hover:bg-purple-400"
+          >
+            Sonraki ders: NovaScore & CP →
+          </button>
+        </div>
       </section>
     </div>
   )

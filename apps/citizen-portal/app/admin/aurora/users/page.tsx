@@ -64,7 +64,7 @@ export default function AuroraUsersPage() {
       )
 
       if (apiError || !data) {
-        setError(apiError || 'Failed to load users')
+        setError(apiError ? (apiError.detail || apiError.error || 'Failed to load users') : 'Failed to load users')
         return
       }
 
@@ -118,7 +118,7 @@ export default function AuroraUsersPage() {
       )
 
       if (apiError) {
-        setError(apiError)
+        setError(apiError.detail || apiError.error || 'Failed to update admin status')
         return
       }
 
@@ -148,7 +148,7 @@ export default function AuroraUsersPage() {
       )
 
       if (apiError) {
-        setError(apiError)
+        setError(apiError.detail || apiError.error || 'Failed to update admin status')
         return
       }
 
@@ -178,7 +178,7 @@ export default function AuroraUsersPage() {
       )
 
       if (apiError) {
-        setError(apiError)
+        setError(apiError.detail || apiError.error || 'Failed to update admin status')
         return
       }
 

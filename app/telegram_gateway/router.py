@@ -145,14 +145,12 @@ async def get_or_create_telegram_account(
     
     if not user:
         # Yeni user oluştur
-        from app.identity.schemas import UserCreate
+        display_name = f"{first_name or ''} {last_name or ''}".strip() or username or f"User {telegram_user_id}"
         
         user = await identity_service.create_user(
-            UserCreate(
-                telegram_id=telegram_user_id,
-                username=username,
-                display_name=f"{first_name or ''} {last_name or ''}".strip() or username,
-            )
+            telegram_id=telegram_user_id,
+            username=username,
+            display_name=display_name,
         )
     
     # TelegramAccount oluştur

@@ -16,7 +16,7 @@ class XpEventCreate(BaseModel):
     user_id: int
     amount: int = Field(..., description="XP amount (can be negative)")
     event_type: str = Field(..., max_length=50, description="Event type identifier")
-    source_app: Literal["flirt", "onlyvips", "poker", "aurora"]
+    source_app: Literal["flirt", "onlyvips", "poker", "aurora", "nasipquest", "marketplace"]
 
     # Optional tracking
     reference_id: str | None = None

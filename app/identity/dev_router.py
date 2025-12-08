@@ -75,3 +75,70 @@ async def create_dev_token(
         "created": created,
     }
 
+
+@router.post(
+    "/token/telegram",
+    summary="Telegram user_id ile token oluştur (dev mode)",
+)
+async def create_token_for_telegram_user(
+    telegram_user_id: int = Query(..., description="Telegram user ID"),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Telegram user_id'si ile token oluştur.
+    
+    Bu endpoint, Telegram'da quest tamamlayan kullanıcının web panelinde
+    aynı user_id ile giriş yapabilmesi için kullanılır.
+    """
+    if not settings.is_dev:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Dev token endpoint disabled outside dev environment",
+        )
+    
+    # TelegramAccount üzerinden User'ı bul
+    from app.telegram_gateway.models import TelegramAccount
+    from app.identity.models import User
+    from sqlmodel import select
+    
+    account_stmt = select(TelegramAccount).where(
+        TelegramAccount.telegram_user_id == telegram_user_id
+    )
+    account_result = await session.execute(account_stmt)
+    account = account_result.scalar_one_or_none()
+    
+    if not account:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Telegram account not found for telegram_user_id: {telegram_user_id}. Call /api/v1/telegram/link first.",
+        )
+    
+    # User'ı çek
+    user_stmt = select(User).where(User.id == account.user_id)
+    user_result = await session.execute(user_stmt)
+    user = user_result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User not found for account.user_id: {account.user_id}",
+        )
+    
+    token = create_access_token(user_id=user.id)
+    logger.info(
+        "dev_telegram_token_issued",
+        user_id=user.id,
+        telegram_user_id=telegram_user_id,
+        telegram_account_id=account.id,
+    )
+    
+    return {
+        "token": token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "telegram_id": user.telegram_id,
+        "telegram_user_id": telegram_user_id,
+        "display_name": user.display_name,
+        "username": user.username,
+    }
+

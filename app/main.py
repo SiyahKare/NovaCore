@@ -30,9 +30,10 @@ from app.justice.mod_router import router as justice_mod_router
 from app.justice.nasipcourt_router import router as nasipcourt_router
 from app.flirtmarket.routes import router as flirtmarket_router
 from app.telemetry.router import router as telemetry_router
+from app.telemetry.academy_router import router as academy_router
 from app.telegram_gateway.router import router as telegram_router
 from app.admin.event_routes import router as admin_event_router
-from app.quests.router import router as quests_router, admin_router as quests_admin_router
+from app.quests.router import router as quests_router, admin_router as quests_admin_router, web_router as quests_web_router
 from app.agency.routes import router as agency_router
 from app.agency.routes_telegram import router as agency_telegram_router
 from app.marketplace.router import router as marketplace_router
@@ -47,6 +48,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     # Startup
     logger.info("novacore_starting", environment=settings.ENV)
+    logger.info("cors_config", cors_origins=settings.CORS_ORIGINS, cors_origins_list=settings.cors_origins_list)
 
     # Initialize database (dev only - use Alembic in prod)
     if settings.is_dev:
@@ -144,9 +146,11 @@ app.include_router(justice_mod_router)  # Justice Mod - Ombudsman/Validator endp
 app.include_router(nasipcourt_router)  # NasipCourt DAO v1.0 - Justice Stack
 app.include_router(flirtmarket_router)  # FlirtMarket - Example endpoints with enforcement
 app.include_router(telemetry_router)  # Telemetry - Growth & Education Event Tracking
+app.include_router(academy_router)  # Academy - Module Progress & Completion Tracking
 app.include_router(telegram_router)  # Telegram Gateway - Bot ↔ NovaCore Bridge
 app.include_router(admin_event_router)  # Admin Event Management
-app.include_router(quests_router)  # Quest Engine - Production-Ready Quest System
+app.include_router(quests_router)  # Quest Engine - Production-Ready Quest System (Telegram)
+app.include_router(quests_web_router)  # Quest Engine - Web/Citizen Portal endpoints
 app.include_router(quests_admin_router)  # Quest Admin/Ombudsman endpoints
 app.include_router(agency_router)  # Agency - Creator → Ajans Dönüşüm Pipeline
 app.include_router(agency_telegram_router)  # Agency Telegram Dashboard API
@@ -169,6 +173,15 @@ async def root():
 async def health():
     """Quick health check."""
     return {"status": "ok"}
+
+
+@app.get("/debug/cors", tags=["debug"])
+async def debug_cors():
+    """Debug CORS settings."""
+    return {
+        "cors_origins": settings.CORS_ORIGINS,
+        "cors_origins_list": settings.cors_origins_list,
+    }
 
 
 if __name__ == "__main__":

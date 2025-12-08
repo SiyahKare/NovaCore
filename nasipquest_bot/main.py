@@ -33,6 +33,7 @@ async def main():
     
     logger.info(f"Starting NasipQuest Bot...")
     logger.info(f"NovaCore URL: {config.NOVACORE_URL}")
+    logger.info(f"StoryQuest URL: {config.STORYQUEST_URL}")
     logger.info(f"Debug mode: {config.DEBUG}")
     
     # Bot ve Dispatcher oluştur

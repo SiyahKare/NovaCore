@@ -67,6 +67,11 @@ async function requestTelegramOAuth(): Promise<TelegramAuthResult> {
     throw new Error('Geçersiz Telegram bot ID.')
   }
 
+  // Origin URL'i al (production'da Cloudflare domain, dev'de localhost)
+  const origin = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : (process.env.NEXT_PUBLIC_AURORA_API_URL?.replace('/api/v1', '') || 'http://localhost:3000')
+
   return await new Promise((resolve, reject) => {
     const login = (window as any).Telegram?.Login
     if (!login?.auth) {
@@ -78,6 +83,7 @@ async function requestTelegramOAuth(): Promise<TelegramAuthResult> {
       {
         bot_id: botId,
         request_access: 'write',
+        origin: origin, // Domain doğrulama için origin ekle
       },
       (response: TelegramAuthResult | { error?: string } | undefined) => {
         if (!response || (response as any).error) {

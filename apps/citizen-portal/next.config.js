@@ -2,9 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@aurora/ui', '@aurora/hooks'],
-  experimental: {
-    serverActions: true,
-  },
   // Allow importing from packages and root node_modules
   webpack: (config, { isServer }) => {
     const path = require('path')

@@ -5,16 +5,27 @@ import Link from 'next/link'
 import {  } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { NovaScoreCard, RegimeBadge } from '@aurora/ui'
-import { useAuroraEvents } from '@aurora/hooks'
+import { useAuroraEvents, useAcademyProgress } from '@aurora/hooks'
 import type { NovaScorePayload } from '@aurora/ui'
 
 export default function NovaScoreModulePage() {
   const router = useRouter()
   const { track } = useAuroraEvents()
+  const { completeModule } = useAcademyProgress()
 
   useEffect(() => {
     track('academy_module_viewed', { module: 'novascore' })
   }, [track])
+
+  const handleComplete = async () => {
+    try {
+      await completeModule('novascore')
+      alert('Modül tamamlandı! 🎉')
+    } catch (err: any) {
+      console.error('Failed to mark module as completed:', err)
+      alert('Modül tamamlanırken bir hata oluştu. Lütfen tekrar deneyin.')
+    }
+  }
 
   // Mock data for educational purposes
   const exampleScore: NovaScorePayload = {
@@ -108,12 +119,20 @@ export default function NovaScoreModulePage() {
         <Link href="/academy" className="hover:text-gray-200">
           ← Academy ana sayfaya dön
         </Link>
-        <button
-          onClick={() => router.push('/academy/modules/justice')}
-          className="rounded-lg bg-purple-500 px-3 py-1.5 text-[11px] text-white font-semibold hover:bg-purple-400"
-        >
-          Sonraki ders: Justice Engine →
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleComplete}
+            className="rounded-lg bg-emerald-500 px-3 py-1.5 text-[11px] text-white font-semibold hover:bg-emerald-400"
+          >
+            ✓ Tamamlandı
+          </button>
+          <button
+            onClick={() => router.push('/academy/modules/justice')}
+            className="rounded-lg bg-purple-500 px-3 py-1.5 text-[11px] text-white font-semibold hover:bg-purple-400"
+          >
+            Sonraki ders: Justice Engine →
+          </button>
+        </div>
       </section>
     </div>
   )

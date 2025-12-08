@@ -142,9 +142,23 @@ async def purchase_item(
             item_id=item_id,
         )
     except ValueError as e:
+        error_msg = str(e)
+        # Duplicate purchase kontrolü
+        if "zaten daha önce satın aldınız" in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=error_msg,
+            )
+        # Yetersiz bakiye kontrolü
+        elif "yetersiz bakiye" in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=error_msg,
+            )
+        # Diğer hatalar
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            detail=error_msg,
         )
 
 

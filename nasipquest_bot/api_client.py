@@ -8,6 +8,18 @@ from typing import Optional, Dict, Any
 from .config import config
 
 
+# --- Marketplace Exceptions ---
+
+class InsufficientFundsError(Exception):
+    """Yetersiz bakiye hatası."""
+    pass
+
+
+class AlreadyPurchasedError(Exception):
+    """Zaten satın alınmış hatası."""
+    pass
+
+
 class NovaCoreClient:
     """NovaCore API client."""
     
@@ -47,6 +59,8 @@ class NovaCoreClient:
                 response = await self.client.get(endpoint, params=params)
             elif method.upper() == "POST":
                 response = await self.client.post(endpoint, params=params, json=data)
+            elif method.upper() == "PATCH":
+                response = await self.client.patch(endpoint, params=params, json=data)
             else:
                 raise ValueError(f"Unsupported method: {method}")
             
@@ -59,8 +73,17 @@ class NovaCoreClient:
             except:
                 error_detail = str(e)
             
+            # HTTP status code'a göre exception fırlat
+            if e.response.status_code == 402:  # Payment Required
+                raise InsufficientFundsError(error_detail)
+            elif e.response.status_code == 409:  # Conflict
+                raise AlreadyPurchasedError(error_detail)
+            
             raise Exception(f"NovaCore API error: {error_detail}")
         except Exception as e:
+            # Zaten custom exception ise direkt fırlat
+            if isinstance(e, (InsufficientFundsError, AlreadyPurchasedError)):
+                raise
             raise Exception(f"API call failed: {str(e)}")
     
     async def link_user(
@@ -308,19 +331,12 @@ class NovaCoreClient:
             AlreadyPurchasedError: Zaten satın alınmış
             Exception: Diğer hatalar
         """
-        try:
-            return await self.call(
-                f"/api/v1/marketplace/items/{item_id}/purchase",
-                method="POST",
-                params={"telegram_user_id": telegram_user_id}
-            )
-        except Exception as e:
-            error_str = str(e)
-            if "Yetersiz bakiye" in error_str or "insufficient" in error_str.lower():
-                raise InsufficientFundsError(error_str)
-            elif "zaten satın alındı" in error_str.lower() or "already purchased" in error_str.lower():
-                raise AlreadyPurchasedError(error_str)
-            raise
+        # call() metodu zaten HTTP status code'a göre exception fırlatıyor
+        return await self.call(
+            f"/api/v1/marketplace/items/{item_id}/purchase",
+            method="POST",
+            params={"telegram_user_id": telegram_user_id}
+        )
     
     async def get_my_marketplace_items(
         self,
@@ -351,18 +367,6 @@ class NovaCoreClient:
     async def close(self):
         """Client'ı kapat."""
         await self.client.aclose()
-
-
-# --- Marketplace Exceptions ---
-
-class InsufficientFundsError(Exception):
-    """Yetersiz bakiye hatası."""
-    pass
-
-
-class AlreadyPurchasedError(Exception):
-    """Zaten satın alınmış hatası."""
-    pass
 
 
 # Global client instance

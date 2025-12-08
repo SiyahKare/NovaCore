@@ -49,10 +49,19 @@ JWT_ALGORITHM=HS256
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES=10080
 
 # CORS
+# Dev: CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+# Prod (Cloudflare): CORS_ORIGINS=https://portal.siyahkare.com,https://app.siyahkare.com
 CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 
+# Backend URL (Cloudflare subdomain için)
+NOVACORE_URL=http://localhost:8000  # Prod: https://api.siyahkare.com
+BACKEND_URL=http://localhost:8000    # Prod: https://api.siyahkare.com
+
+# Frontend URL (Cloudflare subdomain için)
+FRONTEND_URL=http://localhost:3000   # Prod: https://portal.siyahkare.com
+
 # Frontend API URL
-NEXT_PUBLIC_AURORA_API_URL=http://localhost:8000/api/v1
+NEXT_PUBLIC_AURORA_API_URL=http://localhost:8000/api/v1  # Prod: https://api.siyahkare.com/api/v1
 
 # Telegram Gateway (optional)
 TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz

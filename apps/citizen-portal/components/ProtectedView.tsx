@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react'
 import { useCurrentCitizen } from '@aurora/hooks'
+import { getToken } from '@/lib/auth'
 import Link from 'next/link'
 
 interface ProtectedViewProps {
@@ -11,6 +12,7 @@ interface ProtectedViewProps {
 
 export function ProtectedView({ children, requireAdmin = false }: ProtectedViewProps) {
   const { citizen, loading, error, isAuthenticated } = useCurrentCitizen()
+  const hasToken = getToken() !== null
 
   if (loading) {
     return (
@@ -21,6 +23,25 @@ export function ProtectedView({ children, requireAdmin = false }: ProtectedViewP
   }
 
   if (error || !isAuthenticated) {
+    // Token varsa ama authentication başarısızsa (expired/invalid token)
+    if (hasToken) {
+      return (
+        <div className="max-w-md mx-auto py-16 text-center space-y-4">
+          <h2 className="text-xl font-semibold text-gray-100">Oturum sona erdi.</h2>
+          <p className="text-sm text-gray-400">
+            Token&apos;ın süresi dolmuş veya geçersiz. Lütfen tekrar giriş yap.
+          </p>
+          <Link
+            href="/onboarding"
+            className="inline-flex rounded-xl bg-purple-500 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-400 transition"
+          >
+            Connect Citizen
+          </Link>
+        </div>
+      )
+    }
+
+    // Token yoksa - yeni kullanıcı
     return (
       <div className="max-w-md mx-auto py-16 text-center space-y-4">
         <h2 className="text-xl font-semibold text-gray-100">Aurora vatandaşlığı gerekli.</h2>
@@ -42,7 +63,7 @@ export function ProtectedView({ children, requireAdmin = false }: ProtectedViewP
     return (
       <div className="max-w-md mx-auto py-16 text-center space-y-4">
         <h2 className="text-xl font-semibold text-gray-100">Admin yetkisi gerekli.</h2>
-        <p className="text-sm text-gray-400">
+          <p className="text-sm text-gray-400">
           Bu alan sadece Aurora admin kullanıcılarına açık. Admin yetkisi olmayan hesaplar bu
           sayfaya erişemez.
         </p>
@@ -50,7 +71,7 @@ export function ProtectedView({ children, requireAdmin = false }: ProtectedViewP
           href="/dashboard"
           className="inline-flex rounded-xl bg-purple-500 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-400 transition"
         >
-          Dashboard'a Dön
+          Dashboard&apos;a Dön
         </Link>
       </div>
     )

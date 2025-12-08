@@ -4,6 +4,7 @@ import { ProtectedView } from '@/components/ProtectedView'
 import Link from 'next/link'
 import {  } from 'next/navigation'
 import { ModuleCard } from './components/ModuleCard'
+import { useAcademyProgress } from '@aurora/hooks'
 
 const modules = [
   {
@@ -73,6 +74,22 @@ function StartHereSection() {
 }
 
 function AcademyInner() {
+  const { progress, loading } = useAcademyProgress()
+  
+  // Map progress to modules
+  const modulesWithProgress = modules.map((m) => {
+    const moduleProgress = progress?.modules.find((p) => p.module === m.slug)
+    return {
+      ...m,
+      completed: moduleProgress?.completed || false,
+      viewed: moduleProgress?.viewed || false,
+    }
+  })
+  
+  const completedCount = progress?.completed_modules || 0
+  const totalCount = progress?.total_modules || modules.length
+  const completionPercentage = progress?.completion_percentage || 0
+
   return (
     <div className="space-y-8">
       <header className="space-y-2">
@@ -85,11 +102,29 @@ function AcademyInner() {
         </p>
       </header>
 
+      {/* Progress Bar */}
+      {!loading && progress && (
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-300">İlerleme</span>
+            <span className="text-purple-300 font-semibold">
+              {completedCount} / {totalCount} modül tamamlandı ({Math.round(completionPercentage)}%)
+            </span>
+          </div>
+          <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
+              style={{ width: `${completionPercentage}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Start Here CTA */}
       <StartHereSection />
 
       <div className="grid md:grid-cols-2 gap-5">
-        {modules.map((m) => (
+        {modulesWithProgress.map((m) => (
           <ModuleCard key={m.slug} {...m} />
         ))}
       </div>

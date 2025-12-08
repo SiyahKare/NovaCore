@@ -6,7 +6,7 @@ import {  } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { PolicyBreakdown } from '@aurora/ui'
 import type { PolicyParams } from '@aurora/ui'
-import { usePolicy, useAuroraEvents } from '@aurora/hooks'
+import { usePolicy, useAuroraEvents, useAcademyProgress } from '@aurora/hooks'
 
 // Mock policy for educational purposes
 const examplePolicy: PolicyParams = {
@@ -29,11 +29,22 @@ export default function DAOModulePage() {
   const router = useRouter()
   const { policy } = usePolicy()
   const { track } = useAuroraEvents()
+  const { completeModule } = useAcademyProgress()
   const displayPolicy = (policy as PolicyParams) || examplePolicy
 
   useEffect(() => {
     track('academy_module_viewed', { module: 'dao' })
   }, [track])
+
+  const handleComplete = async () => {
+    try {
+      await completeModule('dao')
+      alert('Modül tamamlandı! 🎉')
+    } catch (err: any) {
+      console.error('Failed to mark module as completed:', err)
+      alert('Modül tamamlanırken bir hata oluştu. Lütfen tekrar deneyin.')
+    }
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -110,7 +121,15 @@ export default function DAOModulePage() {
         <Link href="/academy" className="hover:text-gray-200">
           ← Academy ana sayfaya dön
         </Link>
-        <div className="text-gray-500">Tüm modüller tamamlandı! 🎉</div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleComplete}
+            className="rounded-lg bg-emerald-500 px-3 py-1.5 text-[11px] text-white font-semibold hover:bg-emerald-400"
+          >
+            ✓ Tamamlandı
+          </button>
+          <div className="text-gray-500">Tüm modüller tamamlandı! 🎉</div>
+        </div>
       </section>
     </div>
   )

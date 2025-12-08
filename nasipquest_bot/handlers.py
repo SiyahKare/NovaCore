@@ -8,9 +8,54 @@ from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, C
 from aiogram.utils.markdown import bold, code
 
 from .api_client import api_client, InsufficientFundsError, AlreadyPurchasedError
+from .storyquest_client import storyquest_client
 from .config import config
 
 router = Router()
+
+# StoryQuest run_id storage (user_id -> run_id mapping)
+# Telegram callback data limiti 64 byte, bu yüzden run_id'yi saklıyoruz
+_storyquest_runs: dict[int, str] = {}  # user_id -> run_id
+
+# "Cevap yaz" modu - kullanıcı text input bekleniyor
+_waiting_for_reply: dict[int, str] = {}  # user_id -> run_id (reply bekleyenler)
+
+
+def build_cta_keyboard(cta: dict | None, run_id: str) -> InlineKeyboardMarkup | None:
+    """
+    CTA'dan inline keyboard oluştur.
+    
+    Args:
+        cta: CTA dict (None olabilir)
+        run_id: Story run ID'si
+    
+    Returns:
+        InlineKeyboardMarkup veya None (cta yoksa/boşsa)
+    """
+    # cta hiç yoksa / null ise: buton yok, crash yok
+    if not cta:
+        return None
+    
+    question_id = cta.get("question_id")
+    options = cta.get("options") or []
+    
+    # options boşsa da buton yaratma
+    if not question_id or not options:
+        return None
+    
+    rows = []
+    for opt in options:
+        choice_id = opt.get("id", "")
+        choice_label = opt.get("label", "")
+        # Callback data: term|{question_id}|{choice_id}
+        rows.append([
+            InlineKeyboardButton(
+                text=choice_label,
+                callback_data=f"term|{question_id}|{choice_id}"
+            )
+        ])
+    
+    return InlineKeyboardMarkup(inline_keyboard=rows) if rows else None
 
 # Citizen Quest Engine imports
 from app.quests.telegram_formatter import (
@@ -95,6 +140,11 @@ async def cmd_start(message: Message):
     if message.text and len(message.text.split()) > 1:
         start_param = message.text.split()[1]
     
+    # Deep link: /start terminal → /terminal çalıştır
+    if start_param == "terminal":
+        await cmd_terminal(message)
+        return
+    
     try:
         # NovaCore'a link et
         result = await api_client.link_user(
@@ -106,16 +156,62 @@ async def cmd_start(message: Message):
         )
         
         if result.get("success"):
-            await message.answer(
-                f"✨ {bold('Hoş geldin!')}\n\n"
-                f"NovaCore'a bağlandın.\n"
-                f"User ID: {code(str(result.get('user_id', 'N/A')))}\n\n"
-                f"Komutlar için /help yazabilirsin."
+            # Onboarding mesajı
+            onboarding_message = (
+                f"✨ {bold('Hoş geldin, vatandaş.')}\n\n"
+                f"Bu sistem seni sömürmek için değil, seni eski sistemden kurtarmak için var.\n\n"
+                f"NasipQuest = Görev yap → NCR kazan → Marketplace'te sat → Gerçek iş.\n\n"
+                f"Eski sistem: Sen çalış, patron kazansın.\n"
+                f"Yeni sistem: Sen üret, sen kazan.\n\n"
+                f"---\n\n"
+                f"📋 {bold('Nasıl Çalışır?')}\n\n"
+                f"1️⃣ Her gün 3 görev gelir:\n"
+                f"   • 💸 MONEY (Para/İş)\n"
+                f"   • 🧠 SKILL (Öğrenme/Üretim)\n"
+                f"   • 🧭 INTEGRITY (Dürüstlük/Şeffaflık)\n\n"
+                f"2️⃣ Görevleri tamamla → NCR + XP kazan\n\n"
+                f"3️⃣ Kaliteli içerik üret → Marketplace'e düşer\n\n"
+                f"4️⃣ KOBİ'ler senin içeriğini satın alır → Sen kazanırsın\n\n"
+                f"5️⃣ Treasury şişer → Sistem büyür\n\n"
+                f"Basit. Gerçek.\n\n"
+                f"---\n\n"
+                f"🚀 {bold('İlk Adım')}\n\n"
+                f"Şimdi {code('/görevler')} yaz ve bugünkü görevlerini gör.\n\n"
+                f"Her görev 1-2 dakika sürer.\n"
+                f"Dürüst ol, gerçek ol.\n\n"
+                f"Başla: {code('/görevler')}"
             )
+            await message.answer(onboarding_message, parse_mode="Markdown")
         else:
             await message.answer("❌ Bağlantı hatası. Lütfen tekrar dene.")
     except Exception as e:
         await message.answer(f"❌ Hata: {str(e)}")
+
+
+@router.message(Command("panel", "web"))
+async def cmd_panel(message: Message):
+    """Web paneline yönlendir."""
+    from nasipquest_bot.config import config
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    
+    telegram_user_id = message.from_user.id
+    
+    # Web panel URL'i oluştur (telegram_user_id parametresi ile)
+    panel_url = f"{config.FRONTEND_URL}/onboarding?telegram_user_id={telegram_user_id}"
+    
+    text = (
+        f"🌐 {bold('Web Paneli')}\n\n"
+        f"Quest geçmişini, marketplace'i ve dashboard'u web panelinde görüntüleyebilirsin.\n\n"
+        f"Otomatik giriş için aşağıdaki butona tıkla:"
+    )
+    
+    keyboard = InlineKeyboardBuilder()
+    keyboard.button(
+        text="🚀 Web Paneline Git",
+        url=panel_url
+    )
+    
+    await message.answer(text, parse_mode="Markdown", reply_markup=keyboard.as_markup())
 
 
 @router.message(Command("help"))
@@ -770,6 +866,290 @@ async def cmd_complete(message: Message):
         await message.answer(f"❌ Hata: {str(e)}")
 
 
+@router.message(Command("terminal"))
+async def cmd_terminal(message: Message):
+    """
+    /terminal - StoryQuest Terminal'i başlat
+    
+    Yeni bir film/story run başlatır.
+    Grup/kanallarda çalışmaz, bot'a yönlendirir.
+    """
+    # Grup/kanal kontrolü - sadece private chat'te çalışsın
+    if message.chat.type in ("group", "supergroup", "channel"):
+        bot_username = (await message.bot.get_me()).username
+        await message.answer(
+            f"🎬 *SeferVerse Terminal*\n\n"
+            f"Hikayeyi özel sohbette oynamalısın.\n\n"
+            f"👉 [@{bot_username}](https://t.me/{bot_username}?start=terminal) ile başla!",
+            parse_mode="Markdown",
+        )
+        return
+    
+    telegram_user_id = message.from_user.id
+    
+    try:
+        # 🎨 Loading göstergesi
+        await message.answer("🎨 *SeferVerse Terminal başlatılıyor...*\n_AI dünyayı inşa ediyor._", parse_mode="Markdown")
+        await message.bot.send_chat_action(chat_id=message.chat.id, action="upload_photo")
+
+        # StoryQuest Engine'e bağlan ve terminal başlat
+        user = message.from_user
+        
+        # Profil fotoğrafı URL'ini almaya çalış (opsiyonel - şimdilik es geçiyoruz veya implemente ediyoruz)
+        # user_photo_url = ... 
+        
+        result = await storyquest_client.start_terminal(
+            telegram_user_id=telegram_user_id,
+            user_display_name=user.full_name,
+            user_username=user.username,
+            seed=2025,  # Default seed
+        )
+        
+        # DEBUG LOG
+        import json
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info("=" * 50)
+        logger.info("RAW RESPONSE: %s", json.dumps(result, indent=2, ensure_ascii=False))
+        raw_file_url = result.get("file_url")
+        logger.info("file_url value: %s", repr(raw_file_url))
+        logger.info("=" * 50)
+        
+        # Response'dan bilgileri al
+        run_id = result.get("run_id")
+        caption = result.get("caption", "") or "..."
+        
+        # file_url kontrolü: Sadece HTTP/HTTPS URL'leri kabul et (local path'leri reddet)
+        file_url = None
+        if raw_file_url and isinstance(raw_file_url, str) and raw_file_url.strip():
+            if raw_file_url.startswith(("http://", "https://")):
+                file_url = raw_file_url
+                logger.info("Valid HTTP URL: %s", file_url)
+            else:
+                logger.warning("file_url is not HTTP URL (local path?): %s - skipping photo", raw_file_url)
+        
+        cta = result.get("cta")  # None olabilir!
+        
+        # Run_id'yi sakla (callback data limiti için)
+        if run_id:
+            _storyquest_runs[telegram_user_id] = run_id
+        
+        # CTA'dan keyboard oluştur (güvenli)
+        keyboard = build_cta_keyboard(cta, run_id) if run_id else None
+        
+        # CTA varsa question'ı ekle
+        text = f"{bold('🎬 StoryQuest Terminal')}\n\n"
+        text += f"{caption}\n\n"
+        
+        if cta and cta.get("question"):
+            text += f"{bold(cta.get('question'))}\n\n"
+        
+        # CTA yoksa ending/epilog mesajı
+        if not cta:
+            text += "Yeni bir hikaye başlatmak için /terminal komutunu kullan."
+        
+        # Foto/video varsa onu gönder, yoksa text mesaj
+        # file_url kontrolü: None, boş string veya geçersiz URL kontrolü
+        if file_url and isinstance(file_url, str) and file_url.strip() and file_url.startswith(("http://", "https://")):
+            logger.info("Sending photo with file_url: %s", file_url)
+            try:
+                await message.answer_photo(
+                    photo=file_url,
+                    caption=text,
+                    parse_mode="Markdown",
+                    reply_markup=keyboard,
+                )
+            except Exception as photo_error:
+                logger.error("Photo send error: %s", str(photo_error))
+                # Foto gönderme başarısız olursa text mesaj gönder
+                await message.answer(
+                    text,
+                    parse_mode="Markdown",
+                    reply_markup=keyboard,
+                )
+        else:
+            logger.info("No valid file_url (value: %s), sending text message", repr(file_url))
+            await message.answer(
+                text,
+                parse_mode="Markdown",
+                reply_markup=keyboard,
+            )
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error("Terminal error: %s", str(e), exc_info=True)
+        await message.answer(f"❌ Hata: {str(e)}")
+
+
+@router.callback_query(F.data.startswith("term|"))
+async def handle_terminal_choice(callback: CallbackQuery):
+    """
+    Terminal choice callback handler.
+    
+    Callback data format: term|{question_id}|{choice_id}
+    Run_id saklı dict'ten alınır.
+    """
+    try:
+        telegram_user_id = callback.from_user.id
+        
+        # Run_id'yi saklı dict'ten al
+        run_id = _storyquest_runs.get(telegram_user_id)
+        if not run_id:
+            await callback.answer("❌ Hikaye oturumu bulunamadı. /terminal ile yeniden başlat.", show_alert=True)
+            return
+        
+        # Callback data'yı parse et
+        # Format: term|{question_id}|{choice_id}
+        if "|" not in callback.data:
+            await callback.answer("❌ Geçersiz seçim.", show_alert=True)
+            return
+        
+        parts = callback.data.split("|")
+        if len(parts) < 3:
+            await callback.answer("❌ Geçersiz seçim.", show_alert=True)
+            return
+        
+        question_id = parts[1]
+        choice_id = parts[2]
+        
+        # 🎨 Loading göstergesi
+        await callback.answer("🎨 Sahne oluşturuluyor...", show_alert=False)
+        
+        # Geçici mesaj gönder
+        loading_msg = await callback.message.edit_caption(
+            caption="🎨 *Sahne oluşturuluyor...*\n_AI sanatçısı fırçasını kullanıyor._",
+            parse_mode="Markdown"
+        ) if callback.message.caption else await callback.message.edit_text(
+            text="🎨 *Sahne oluşturuluyor...*\n_AI sanatçısı fırçasını kullanıyor._",
+            parse_mode="Markdown"
+        )
+        
+        # Chat action (typing/upload_photo)
+        await callback.message.bot.send_chat_action(
+            chat_id=callback.message.chat.id, 
+            action="upload_photo"
+        )
+        
+        # StoryQuest Engine'e seçim gönder
+        result = await storyquest_client.make_choice(
+            run_id=run_id,
+            question_id=question_id,
+            choice_id=choice_id,
+        )
+        
+        # Response'dan bilgileri al
+        caption = result.get("caption", "") or "..."
+        # Escape karakterlerini düzelt
+        if isinstance(caption, str):
+            caption = caption.replace("\\n", "\n").replace("\\.",".")
+        
+        file_url = result.get("file_url")  # Doğru field adı: file_url
+        cta = result.get("cta")  # None olabilir!
+        is_final = result.get("is_final", False)
+        ending = result.get("ending")
+        reward = result.get("reward", {})
+        
+        # Ending'den reward ve badge al (eğer varsa)
+        if ending and isinstance(ending, dict):
+            # Ending caption'ı kullan (daha detaylı)
+            ending_caption = ending.get("caption", "")
+            if ending_caption:
+                caption = ending_caption.replace("\\n", "\n").replace("\\.",".")
+            # Ending'deki reward'ı kullan
+            if ending.get("reward"):
+                reward = ending["reward"]
+        
+        # Mesaj formatla
+        text = f"{caption}\n\n"
+        
+        if is_final:
+            # Hikaye bitti
+            text += f"{bold('🎬 Hikaye Tamamlandı!')}\n\n"
+            if reward:
+                nasip = reward.get("nasip", 0)
+                xp = reward.get("xp", 0)
+                badge = reward.get("badge", "") or (ending.get("badge") if ending else "")
+                if nasip > 0 or xp > 0 or badge:
+                    text += f"🎁 *Ödüller:*\n"
+                    if nasip > 0:
+                        text += f"  • 💫 {nasip} Nasip\n"
+                    if xp > 0:
+                        text += f"  • ⭐ {xp} XP\n"
+                    if badge:
+                        text += f"  • 🏅 Badge: {badge}\n"
+                    text += "\n"
+            text += "Yeni bir hikaye başlatmak için /terminal komutunu kullan."
+            
+            # file_url varsa foto gönder, yoksa text edit
+            # file_url kontrolü: None, boş string veya geçersiz URL kontrolü
+            if file_url and isinstance(file_url, str) and file_url.strip() and file_url.startswith(("http://", "https://")):
+                try:
+                    await callback.message.delete()
+                    await callback.message.answer_photo(
+                        photo=file_url,
+                        caption=text,
+                        parse_mode="Markdown",
+                    )
+                except Exception as photo_error:
+                    logger.error("Photo send error: %s", str(photo_error))
+                    # Foto gönderme başarısız olursa text edit
+                    await callback.message.edit_text(
+                        text,
+                        parse_mode="Markdown",
+                    )
+            else:
+                await callback.message.edit_text(
+                    text,
+                    parse_mode="Markdown",
+                )
+            await callback.answer("✅ Hikaye tamamlandı!")
+        else:
+            # Devam ediyor - CTA varsa question ekle
+            if cta and cta.get("question"):
+                text += f"{bold(cta.get('question'))}\n\n"
+            
+            # Run_id'yi güncelle (yeni step için)
+            _storyquest_runs[telegram_user_id] = run_id
+            
+            # CTA'dan keyboard oluştur (güvenli)
+            keyboard = build_cta_keyboard(cta, run_id)
+            
+            # CTA yoksa ending mesajı
+            if not cta:
+                text += "Yeni bir hikaye başlatmak için /terminal komutunu kullan."
+            
+            # file_url varsa foto gönder, yoksa text edit
+            # file_url kontrolü: None, boş string veya geçersiz URL kontrolü
+            if file_url and isinstance(file_url, str) and file_url.strip() and file_url.startswith(("http://", "https://")):
+                try:
+                    await callback.message.delete()
+                    await callback.message.answer_photo(
+                        photo=file_url,
+                        caption=text,
+                        parse_mode="Markdown",
+                        reply_markup=keyboard,
+                    )
+                except Exception as photo_error:
+                    logger.error("Photo send error: %s", str(photo_error))
+                    # Foto gönderme başarısız olursa text edit
+                    await callback.message.edit_text(
+                        text,
+                        parse_mode="Markdown",
+                        reply_markup=keyboard,
+                    )
+            else:
+                await callback.message.edit_text(
+                    text,
+                    parse_mode="Markdown",
+                    reply_markup=keyboard,
+                )
+            await callback.answer("✅ Seçim yapıldı!")
+        
+    except Exception as e:
+        await callback.answer(f"❌ Hata: {str(e)}", show_alert=True)
+
+
 @router.message(Command("earnings"))
 async def cmd_earnings(message: Message):
     """
@@ -820,3 +1200,672 @@ async def cmd_earnings(message: Message):
     
     except Exception as e:
         await message.answer(f"❌ Hata: {str(e)}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BROADCAST / GRUP YAYIN KOMUTLARI
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_admin_user_ids() -> list[int]:
+    """Admin user ID'lerini .env'den al."""
+    import os
+    admin_str = os.getenv("ADMIN_USER_IDS", "")
+    if not admin_str:
+        return []
+    return [int(x.strip()) for x in admin_str.split(",") if x.strip().isdigit()]
+
+
+@router.message(Command("broadcast"))
+async def cmd_broadcast(message: Message):
+    """
+    /broadcast <mesaj> - Gruba/kanala yayın yap
+    
+    Sadece adminler kullanabilir.
+    Örnek: /broadcast 🎬 Yeni SeferVerse bölümü yayında!
+    """
+    # Admin kontrolü
+    admin_ids = get_admin_user_ids()
+    if message.from_user.id not in admin_ids:
+        await message.answer(f"❌ Bu komutu kullanma yetkiniz yok. (ID: {message.from_user.id})")
+        return
+    
+    # Mesajı al
+    text = message.text.replace("/broadcast", "").strip()
+    if not text:
+        await message.answer("❌ Kullanım: /broadcast <mesaj>")
+        return
+    
+    # Grup/kanal ID'sini al
+    channel_id = config.BROADCAST_CHANNEL_ID or config.BROADCAST_GROUP_ID
+    if not channel_id:
+        await message.answer("❌ Broadcast hedefi ayarlanmamış. .env'de BROADCAST_CHANNEL_ID veya BROADCAST_GROUP_ID ayarlayın.")
+        return
+    
+    try:
+        bot = message.bot
+        
+        await bot.send_message(
+            chat_id=channel_id,
+            text=text,
+            parse_mode="Markdown",
+        )
+        await message.answer(f"✅ Mesaj gönderildi: {channel_id}")
+    except Exception as e:
+        await message.answer(f"❌ Gönderim hatası: {str(e)}")
+
+
+@router.message(Command("broadcast_seferverse"))
+async def cmd_broadcast_seferverse(message: Message):
+    """
+    /broadcast_seferverse - SeferVerse intro'sunu gruba yayınla
+    
+    Sadece adminler kullanabilir.
+    """
+    # Admin kontrolü
+    admin_ids = get_admin_user_ids()
+    if message.from_user.id not in admin_ids:
+        await message.answer(f"❌ Bu komutu kullanma yetkiniz yok. (ID: {message.from_user.id})")
+        return
+    
+    # Bot username'i al
+    bot_info = await message.bot.get_me()
+    bot_username = bot_info.username
+    
+    # SeferVerse manifesto
+    seferverse_text = f"""🌌 *SeferVerse*
+
+Ardında yanmış toprak.
+Önünde adı bile olmayan bir dünya.
+
+Siyah kumlar, sanki geçmişin küllerinden yapılmış gibi
+sessizce uzanıyor ufka doğru.
+
+Gökyüzünde ay yok. Güneş yok.
+Sadece devasa bir *Siyah Kare* var.
+
+Çünkü geri dönmek diye bir seçenek kalmadı.
+Kaderi yazan sensin.
+
+Her SEFER, bilinmeyene atılan ilk adımdır.
+Ve sen o adımı zaten attın.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🎬 [Hikayeye başla](https://t.me/{bot_username}?start=terminal)
+━━━━━━━━━━━━━━━━━━━━━━
+
+#SeferVerse #SiyahKare #KodunÖtesi #Nasip"""
+    
+    channel_id = config.BROADCAST_CHANNEL_ID or config.BROADCAST_GROUP_ID
+    if not channel_id:
+        await message.answer("❌ Broadcast hedefi ayarlanmamış.")
+        return
+    
+    try:
+        bot = message.bot
+        
+        # Önce görsel üret/getir
+        result = await storyquest_client.start_terminal(
+            telegram_user_id=0,  # System broadcast
+            seed=2025,
+        )
+        file_url = result.get("file_url")
+        
+        if file_url and file_url.startswith("http"):
+            await bot.send_photo(
+                chat_id=channel_id,
+                photo=file_url,
+                caption=seferverse_text,
+                parse_mode="Markdown",
+            )
+        else:
+            await bot.send_message(
+                chat_id=channel_id,
+                text=seferverse_text,
+                parse_mode="Markdown",
+            )
+        
+        await message.answer(f"✅ SeferVerse yayını gönderildi: {channel_id}")
+    except Exception as e:
+        await message.answer(f"❌ Gönderim hatası: {str(e)}")
+
+
+@router.message(Command("export_ig"))
+async def cmd_export_ig(message: Message):
+    """
+    /export_ig - SeferVerse içeriğini Instagram için export et
+    
+    Görsel URL + Caption + Hashtag verir, manuel paylaşım için.
+    """
+    # Admin kontrolü
+    admin_ids = get_admin_user_ids()
+    if message.from_user.id not in admin_ids:
+        await message.answer("❌ Bu komutu kullanma yetkiniz yok.")
+        return
+    
+    await message.answer("🎨 Instagram içeriği hazırlanıyor...")
+    
+    try:
+        # Görsel üret
+        result = await storyquest_client.start_terminal(
+            telegram_user_id=0,
+            seed=2025,
+        )
+        file_url = result.get("file_url", "")
+        
+        # Instagram caption
+        ig_caption = """🌌 SeferVerse
+
+Ardında yanmış toprak.
+Önünde adı bile olmayan bir dünya.
+
+Siyah kumlar, sanki geçmişin küllerinden yapılmış gibi sessizce uzanıyor ufka doğru.
+
+Gökyüzünde ay yok. Güneş yok.
+Sadece devasa bir Siyah Kare var.
+
+Çünkü geri dönmek diye bir seçenek kalmadı.
+Kaderi yazan sensin.
+
+Her SEFER, bilinmeyene atılan ilk adımdır.
+Ve sen o adımı zaten attın.
+
+🎬 Hikayeye katıl: Bio'daki link
+
+#SeferVerse #SiyahKare #KodunÖtesi #Nasip #InteractiveStory #AIArt #DigitalArt #TurkishSciFi #BilimKurgu #DijitalSanat #Hikaye #SeçimliMacera"""
+
+        # Export mesajı
+        export_text = f"""📸 *Instagram Export*
+
+━━━━━━━━━━━━━━━━━━━━━━
+🖼️ *Görsel URL:*
+`{file_url}`
+
+━━━━━━━━━━━━━━━━━━━━━━
+📝 *Caption (kopyala):*
+━━━━━━━━━━━━━━━━━━━━━━"""
+
+        await message.answer(export_text, parse_mode="Markdown")
+        await message.answer(ig_caption)  # Plain text - kolay kopyalama için
+        
+        # Görseli de gönder (kolay indirme için)
+        if file_url and file_url.startswith("http"):
+            await message.answer_photo(
+                photo=file_url,
+                caption="⬆️ Instagram için görsel (uzun bas → kaydet)"
+            )
+    
+    except Exception as e:
+        await message.answer(f"❌ Export hatası: {str(e)}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MEKTUP CEVABI - GPT Puanlama
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("term|") & F.data.endswith("|write_reply"))
+async def handle_write_reply_choice(callback: CallbackQuery):
+    """
+    "Cevap yaz" seçimi - kullanıcıyı text input moduna al.
+    """
+    telegram_user_id = callback.from_user.id
+    run_id = _storyquest_runs.get(telegram_user_id)
+    
+    if not run_id:
+        await callback.answer("❌ Hikaye oturumu bulunamadı. /terminal ile başla.", show_alert=True)
+        return
+    
+    # Kullanıcıyı "cevap bekleniyor" moduna al
+    _waiting_for_reply[telegram_user_id] = run_id
+    
+    await callback.message.edit_text(
+        f"✍️ *Mektuba Cevap Yaz*\n\n"
+        f"Kalem elinde, kağıt önünde.\n"
+        f"Yıllardır söyleyemediklerini şimdi yazacaksın.\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"📝 Cevabını yaz ve gönder.\n"
+        f"(En az 20 karakter)\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"💡 _İpucu: Ne kadar samimi ve içten yazarsan,_\n"
+        f"_hikayenin sonu o kadar farklı olacak._",
+        parse_mode="Markdown",
+    )
+    await callback.answer("✍️ Cevabını yaz...")
+
+
+@router.message(F.text & ~F.text.startswith("/"))
+async def handle_text_reply(message: Message):
+    """
+    Kullanıcının yazdığı mektup cevabını işle.
+    """
+    telegram_user_id = message.from_user.id
+    
+    # Bu kullanıcı cevap bekliyor mu?
+    if telegram_user_id not in _waiting_for_reply:
+        return  # Normal mesaj, ignore et
+    
+    run_id = _waiting_for_reply[telegram_user_id]
+    user_reply = message.text.strip()
+    
+    # Çok kısa cevap kontrolü
+    if len(user_reply) < 20:
+        await message.answer(
+            "📝 Cevabın çok kısa. En az 20 karakter yaz.\n\n"
+            "_Duygularını ifade et, ne hissediyorsun?_",
+            parse_mode="Markdown",
+        )
+        return
+    
+    # Kullanıcıyı listeden çıkar
+    del _waiting_for_reply[telegram_user_id]
+    
+    # GPT'ye gönder ve puanla
+    await message.answer("🔮 Cevabın değerlendiriliyor...")
+    
+    try:
+        result = await storyquest_client.score_reply(
+            run_id=run_id,
+            user_reply=user_reply,
+        )
+        
+        toplam = result.get("toplam", 50)
+        samimiyet = result.get("samimiyet", 0)
+        empati = result.get("empati", 0)
+        karar = result.get("karar", 0)
+        yorum = result.get("yorum", "")
+        ending_type = result.get("ending_type", "journey")
+        reward = result.get("reward", {})
+        
+        # Puan görseli
+        if toplam >= 80:
+            emoji = "💖"
+            rating = "Yürekten"
+        elif toplam >= 60:
+            emoji = "💝"
+            rating = "Samimi"
+        elif toplam >= 40:
+            emoji = "📝"
+            rating = "Normal"
+        else:
+            emoji = "❄️"
+            rating = "Soğuk"
+        
+        # Sonuç mesajı
+        score_text = f"""📊 *Cevap Değerlendirmesi*
+
+{emoji} *{rating}* — {toplam}/100 puan
+
+━━━━━━━━━━━━━━━━━━━━━━
+💗 Samimiyet: {samimiyet}/40
+🤝 Empati: {empati}/30
+🎯 Karar: {karar}/30
+━━━━━━━━━━━━━━━━━━━━━━
+
+_{yorum}_
+
+"""
+        
+        # Ödül
+        if reward:
+            nasip = reward.get("nasip", 0)
+            xp = reward.get("xp", 0)
+            badge = reward.get("badge")
+            if nasip > 0 or xp > 0:
+                score_text += f"\n🎁 *Ödül:*"
+                if nasip > 0:
+                    score_text += f" 💫 {nasip} Nasip"
+                if xp > 0:
+                    score_text += f" ⭐ {xp} XP"
+                if badge:
+                    score_text += f"\n🏅 Badge: {badge}"
+        
+        await message.answer(score_text, parse_mode="Markdown")
+        
+        # Şimdi ending'i göster
+        # Ending'e göre seçim yap
+        ending_choice_id = f"gpt_{ending_type}"
+        
+        # Normal choice flow'una gir
+        choice_result = await storyquest_client.make_choice(
+            run_id=run_id,
+            question_id="sv_terminal_q3_reply",
+            choice_id=ending_choice_id if ending_type != "journey" else "go_border",
+        )
+        
+        # Final mesajı göster
+        caption = choice_result.get("caption", "")
+        if isinstance(caption, str):
+            caption = caption.replace("\\n", "\n")
+        
+        ending_text = f"{caption}\n\n{bold('🎬 Hikaye Tamamlandı!')}"
+        ending_text += "\n\nYeni bir hikaye başlatmak için /terminal komutunu kullan."
+        
+        file_url = choice_result.get("file_url")
+        if file_url and file_url.startswith("http"):
+            await message.answer_photo(
+                photo=file_url,
+                caption=ending_text,
+                parse_mode="Markdown",
+            )
+        else:
+            await message.answer(ending_text, parse_mode="Markdown")
+    
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error("Reply scoring error: %s", str(e), exc_info=True)
+        await message.answer(f"❌ Değerlendirme hatası: {str(e)}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENGAGING MESAJLAR - Admin Gruplarına Otomatik Mesajlar
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_engaging_messages() -> list[dict]:
+    """
+    Engaging mesaj pool'u.
+    Her mesaj: {"text": "...", "type": "quest|story|motivation|event"}
+    """
+    import random
+    from datetime import datetime
+    
+    bot_username = "nasipquest_bot"  # Bot username (runtime'da güncellenecek)
+    
+    messages = [
+        # Quest hatırlatmaları
+        {
+            "text": f"""🎯 *Günlük Görevler Hazır!*
+
+Bugünün quest'lerini tamamla, NCR kazan!
+
+💸 MONEY — Para/İş görevleri
+🧠 SKILL — Öğrenme/Üretim görevleri  
+🧭 INTEGRITY — Dürüstlük/Şeffaflık görevleri
+
+━━━━━━━━━━━━━━━━━━━━━━
+👉 [Görevleri Gör](https://t.me/{bot_username}?start=start)
+━━━━━━━━━━━━━━━━━━━━━━
+
+#NasipQuest #Görevler #NCR""",
+            "type": "quest"
+        },
+        {
+            "text": f"""📋 *Bugün Ne Yaptın?*
+
+Her gün 3 görev gelir.
+Her görev 1-2 dakika sürer.
+Her görev NCR + XP kazandırır.
+
+Basit. Gerçek.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🎯 [Görevleri Gör](https://t.me/{bot_username}?start=start)
+━━━━━━━━━━━━━━━━━━━━━━
+
+#NasipQuest #GünlükGörev""",
+            "type": "quest"
+        },
+        
+        # SeferVerse hikaye güncellemeleri
+        {
+            "text": f"""🌌 *SeferVerse - Yeni Bölüm*
+
+Ardında yanmış toprak.
+Önünde adı bile olmayan bir dünya.
+
+Siyah kumlar, sanki geçmişin küllerinden yapılmış gibi
+sessizce uzanıyor ufka doğru.
+
+Gökyüzünde ay yok. Güneş yok.
+Sadece devasa bir *Siyah Kare* var.
+
+Çünkü geri dönmek diye bir seçenek kalmadı.
+Kaderi yazan sensin.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🎬 [Hikayeye Başla](https://t.me/{bot_username}?start=terminal)
+━━━━━━━━━━━━━━━━━━━━━━
+
+#SeferVerse #SiyahKare #KodunÖtesi""",
+            "type": "story"
+        },
+        {
+            "text": f"""🎬 *SeferVerse Terminal*
+
+Her SEFER, bilinmeyene atılan ilk adımdır.
+Ve sen o adımı zaten attın.
+
+━━━━━━━━━━━━━━━━━━━━━━
+👉 [Terminal'i Aç](https://t.me/{bot_username}?start=terminal)
+━━━━━━━━━━━━━━━━━━━━━━
+
+#SeferVerse #InteractiveStory""",
+            "type": "story"
+        },
+        
+        # Motivasyon mesajları
+        {
+            "text": f"""💪 *Eski Sistem vs Yeni Sistem*
+
+❌ Eski sistem: Sen çalış, patron kazansın.
+✅ Yeni sistem: Sen üret, sen kazan.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🚀 [NasipQuest'e Katıl](https://t.me/{bot_username}?start=start)
+━━━━━━━━━━━━━━━━━━━━━━
+
+#NasipQuest #YeniSistem""",
+            "type": "motivation"
+        },
+        {
+            "text": f"""🎯 *NasipQuest Mantığı*
+
+1️⃣ Görev yap → NCR kazan
+2️⃣ Marketplace'te sat → Gerçek iş
+3️⃣ Treasury şişer → Sistem büyür
+
+Basit. Gerçek.
+
+━━━━━━━━━━━━━━━━━━━━━━
+👉 [Başla](https://t.me/{bot_username}?start=start)
+━━━━━━━━━━━━━━━━━━━━━━
+
+#NasipQuest #Ekonomi""",
+            "type": "motivation"
+        },
+        {
+            "text": f"""🌟 *Dürüst Ol, Gerçek Ol*
+
+Kaliteli içerik üret → Marketplace'e düşer
+KOBİ'ler satın alır → Sen kazanırsın
+
+━━━━━━━━━━━━━━━━━━━━━━
+📋 [Görevleri Gör](https://t.me/{bot_username}?start=start)
+━━━━━━━━━━━━━━━━━━━━━━
+
+#NasipQuest #Dürüstlük""",
+            "type": "motivation"
+        },
+        
+        # Event duyuruları
+        {
+            "text": f"""🔥 *Nasip Friday*
+
+Her Cuma özel event!
+XP multiplier + NCR bonus.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🎯 [Katıl](https://t.me/{bot_username}?start=start)
+━━━━━━━━━━━━━━━━━━━━━━
+
+#NasipFriday #Event""",
+            "type": "event"
+        },
+        {
+            "text": f"""⚔️ *Quest War*
+
+Haftalık liderlik yarışması!
+En çok quest tamamlayan kazanır.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🏆 [Leaderboard](https://t.me/{bot_username}?start=start)
+━━━━━━━━━━━━━━━━━━━━━━
+
+#QuestWar #Yarışma""",
+            "type": "event"
+        },
+    ]
+    
+    return messages
+
+
+def get_admin_group_ids() -> list[str]:
+    """Admin grup ID'lerini .env'den al."""
+    admin_groups_str = config.ADMIN_GROUPS
+    if not admin_groups_str:
+        return []
+    return [gid.strip() for gid in admin_groups_str.split(",") if gid.strip()]
+
+
+async def check_bot_is_admin(bot, chat_id: str) -> bool:
+    """
+    Botun bu grupta admin olup olmadığını kontrol et.
+    """
+    try:
+        from aiogram.types import ChatMemberStatus
+        member = await bot.get_chat_member(chat_id=chat_id, user_id=(await bot.get_me()).id)
+        return member.status in (ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.CREATOR)
+    except Exception:
+        return False
+
+
+@router.message(Command("engage_groups"))
+async def cmd_engage_groups(message: Message):
+    """
+    /engage_groups - Admin olduğu gruplara engaging mesaj gönder
+    
+    Sadece adminler kullanabilir.
+    """
+    # Admin kontrolü
+    admin_ids = get_admin_user_ids()
+    if message.from_user.id not in admin_ids:
+        await message.answer(f"❌ Bu komutu kullanma yetkiniz yok. (ID: {message.from_user.id})")
+        return
+    
+    await message.answer("🔄 Gruplara engaging mesajlar gönderiliyor...")
+    
+    # Bot username'i al
+    bot_info = await message.bot.get_me()
+    bot_username = bot_info.username
+    
+    # Mesaj pool'undan rastgele seç
+    import random
+    messages = get_engaging_messages()
+    # Bot username'i güncelle
+    for msg in messages:
+        msg["text"] = msg["text"].replace("nasipquest_bot", bot_username)
+    
+    selected_message = random.choice(messages)
+    
+    # Admin grup ID'lerini al
+    admin_group_ids = get_admin_group_ids()
+    
+    if not admin_group_ids:
+        await message.answer(
+            "❌ Admin grup ID'leri ayarlanmamış.\n\n"
+            ".env dosyasına şunu ekle:\n"
+            "`ADMIN_GROUPS=-1001234567890,-1009876543210`\n\n"
+            "Grup ID'lerini öğrenmek için @userinfobot'u gruba ekle."
+        )
+        return
+    
+    # Her gruba mesaj gönder
+    success_count = 0
+    fail_count = 0
+    results = []
+    
+    for group_id in admin_group_ids:
+        try:
+            # Admin kontrolü
+            is_admin = await check_bot_is_admin(message.bot, group_id)
+            if not is_admin:
+                results.append(f"⚠️ {group_id}: Bot admin değil")
+                fail_count += 1
+                continue
+            
+            # Mesaj gönder
+            await message.bot.send_message(
+                chat_id=group_id,
+                text=selected_message["text"],
+                parse_mode="Markdown",
+                disable_web_page_preview=False,
+            )
+            results.append(f"✅ {group_id}: Gönderildi")
+            success_count += 1
+            
+            # Rate limit için kısa bekleme
+            import asyncio
+            await asyncio.sleep(1)
+            
+        except Exception as e:
+            results.append(f"❌ {group_id}: {str(e)}")
+            fail_count += 1
+    
+    # Sonuç raporu
+    report = f"""📊 *Engaging Mesaj Raporu*
+
+✅ Başarılı: {success_count}
+❌ Başarısız: {fail_count}
+📝 Mesaj Tipi: {selected_message['type']}
+
+━━━━━━━━━━━━━━━━━━━━━━
+*Detaylar:*
+"""
+    for result in results:
+        report += f"{result}\n"
+    
+    await message.answer(report, parse_mode="Markdown")
+
+
+@router.message(Command("list_admin_groups"))
+async def cmd_list_admin_groups(message: Message):
+    """
+    /list_admin_groups - Botun admin olduğu grupları listele
+    
+    Sadece adminler kullanabilir.
+    """
+    # Admin kontrolü
+    admin_ids = get_admin_user_ids()
+    if message.from_user.id not in admin_ids:
+        await message.answer(f"❌ Bu komutu kullanma yetkiniz yok. (ID: {message.from_user.id})")
+        return
+    
+    admin_group_ids = get_admin_group_ids()
+    
+    if not admin_group_ids:
+        await message.answer(
+            "❌ Admin grup ID'leri ayarlanmamış.\n\n"
+            ".env dosyasına şunu ekle:\n"
+            "`ADMIN_GROUPS=-1001234567890,-1009876543210`"
+        )
+        return
+    
+    # Her grubun bilgisini al
+    report = f"📋 *Admin Grupları*\n\n"
+    
+    for group_id in admin_group_ids:
+        try:
+            chat = await message.bot.get_chat(chat_id=group_id)
+            is_admin = await check_bot_is_admin(message.bot, group_id)
+            status = "✅ Admin" if is_admin else "❌ Admin değil"
+            
+            report += f"{status}\n"
+            report += f"ID: `{group_id}`\n"
+            report += f"İsim: {chat.title or 'N/A'}\n"
+            report += f"Tip: {chat.type}\n"
+            report += "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            
+        except Exception as e:
+            report += f"❌ {group_id}: {str(e)}\n"
+            report += "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    
+    await message.answer(report, parse_mode="Markdown")

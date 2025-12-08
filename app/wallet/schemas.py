@@ -47,7 +47,7 @@ class TransactionCreate(BaseModel):
     user_id: int
     amount: Decimal = Field(..., gt=0, description="Positive amount")
     type: LedgerEntryType
-    source_app: Literal["flirt", "onlyvips", "poker", "aurora", "admin"]
+    source_app: Literal["flirt", "onlyvips", "poker", "aurora", "admin", "nasipquest", "marketplace"]
     token: str = "NCR"
 
     # Optional tracking

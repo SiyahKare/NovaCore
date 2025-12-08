@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {  } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { RegimeBadge } from '@aurora/ui'
-import { useAuroraEvents } from '@aurora/hooks'
+import { useAuroraEvents, useAcademyProgress } from '@aurora/hooks'
 
 const violationCategories = [
   { code: 'EKO', name: 'Ekonomik', base: 10, examples: ['No-show', 'Chargeback', 'Fraud'] },
@@ -25,10 +25,21 @@ const regimes = [
 export default function JusticeModulePage() {
   const router = useRouter()
   const { track } = useAuroraEvents()
+  const { completeModule } = useAcademyProgress()
 
   useEffect(() => {
     track('academy_module_viewed', { module: 'justice' })
   }, [track])
+
+  const handleComplete = async () => {
+    try {
+      await completeModule('justice')
+      alert('Modül tamamlandı! 🎉')
+    } catch (err: any) {
+      console.error('Failed to mark module as completed:', err)
+      alert('Modül tamamlanırken bir hata oluştu. Lütfen tekrar deneyin.')
+    }
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -112,12 +123,20 @@ export default function JusticeModulePage() {
         <Link href="/academy" className="hover:text-gray-200">
           ← Academy ana sayfaya dön
         </Link>
-        <button
-          onClick={() => router.push('/academy/modules/dao')}
-          className="rounded-lg bg-purple-500 px-3 py-1.5 text-[11px] text-white font-semibold hover:bg-purple-400"
-        >
-          Sonraki ders: DAO & Policy →
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleComplete}
+            className="rounded-lg bg-emerald-500 px-3 py-1.5 text-[11px] text-white font-semibold hover:bg-emerald-400"
+          >
+            ✓ Tamamlandı
+          </button>
+          <button
+            onClick={() => router.push('/academy/modules/dao')}
+            className="rounded-lg bg-purple-500 px-3 py-1.5 text-[11px] text-white font-semibold hover:bg-purple-400"
+          >
+            Sonraki ders: DAO & Policy →
+          </button>
+        </div>
       </section>
     </div>
   )

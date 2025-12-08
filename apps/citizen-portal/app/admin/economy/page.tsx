@@ -76,7 +76,7 @@ export default function EconomyDashboardPage() {
 }
 
 function EconomyDashboardInner() {
-  const { get } = useAuroraAPI()
+  const { fetchAPI } = useAuroraAPI()
   const [summary, setSummary] = useState<EconomySummary | null>(null)
   const [treasuryStats, setTreasuryStats] = useState<TreasuryDailyStat[]>([])
   const [loading, setLoading] = useState(true)
@@ -90,16 +90,15 @@ function EconomyDashboardInner() {
   const loadData = async () => {
     try {
       const [summaryRes, treasuryRes] = await Promise.all([
-        get('/admin/economy/summary'),
-        get('/admin/economy/treasury/daily?days=30'),
+        fetchAPI<EconomySummary>('/admin/economy/summary'),
+        fetchAPI<TreasuryDailyStat[]>('/admin/economy/treasury/daily?days=30'),
       ])
 
-      if (summaryRes.ok) {
-        setSummary(await summaryRes.json())
+      if (summaryRes.data) {
+        setSummary(summaryRes.data)
       }
-      if (treasuryRes.ok) {
-        const data = await treasuryRes.json()
-        setTreasuryStats(data)
+      if (treasuryRes.data) {
+        setTreasuryStats(treasuryRes.data)
       }
     } catch (error) {
       console.error('Failed to load economy data:', error)
@@ -251,7 +250,7 @@ function EconomyDashboardInner() {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                 label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
                 outerRadius={100}
                 fill="#8884d8"
                 dataKey="value"

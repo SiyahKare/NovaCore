@@ -202,14 +202,16 @@ class MarketplaceService:
         existing_purchase = duplicate_result.scalar_one_or_none()
         
         if existing_purchase:
-            # İdempotent: Aynı purchase'ı döndür
+            # Duplicate purchase: Exception fırlat
             logger.info(
                 "duplicate_purchase_prevented",
                 buyer_id=buyer_id,
                 item_id=item_id,
                 existing_purchase_id=existing_purchase.id,
             )
-            return existing_purchase
+            raise ValueError(
+                f"Bu ürünü zaten daha önce satın aldınız. Purchase ID: {existing_purchase.id}"
+            )
         
         # Bakiye kontrolü
         buyer_balance = await self.wallet_service.get_balance(buyer_id, "NCR")
